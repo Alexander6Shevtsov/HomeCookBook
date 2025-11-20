@@ -16,10 +16,7 @@ final class RecipeListRouter: RecipeListRouterInput {
 	}
 	
 	func routeToDetails(mealId: String) {
-		// TODO: заменить на реальный RecipeDetailAssembly.build(mealId:).
-		let alert = UIAlertController(title: "Open Details", message: "Meal ID: \(mealId)", preferredStyle: .alert)
-		alert.addAction(UIAlertAction(title: "OK", style: .default))
-		viewController?.present(alert, animated: true)
+		let details = RecipeDetailAssembly.build(mealId: mealId)
+		viewController?.navigationController?.pushViewController(details, animated: true)
 	}
 }
-

@@ -11,12 +11,19 @@
 		425728862ECF16EC00E95676 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 4257287E2ECF16EC00E95676 /* LaunchScreen.storyboard */; };
 		425728882ECF16EC00E95676 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4257287A2ECF16EC00E95676 /* AppDelegate.swift */; };
 		425728892ECF16EC00E95676 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 425728812ECF16EC00E95676 /* SceneDelegate.swift */; };
-		425728912ECF1E1400E95676 /* RecipeListProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 425728902ECF1E1400E95676 /* RecipeListProtocols.swift */; };
+		425728912ECF1E1400E95676 /* RecipeListContracts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 425728902ECF1E1400E95676 /* RecipeListContracts.swift */; };
 		425728932ECF1E8800E95676 /* RecipeListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 425728922ECF1E8800E95676 /* RecipeListViewController.swift */; };
 		4270D77E2ECF2477002829AA /* RecipeListPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D77D2ECF2477002829AA /* RecipeListPresenter.swift */; };
 		4270D7802ECF25FE002829AA /* RecipeListAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D77F2ECF25FE002829AA /* RecipeListAssembly.swift */; };
 		4270D7822ECF2645002829AA /* RecipeListRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7812ECF2645002829AA /* RecipeListRouter.swift */; };
 		4270D7842ECF266B002829AA /* RecipeListInteractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7832ECF266B002829AA /* RecipeListInteractor.swift */; };
+		4270D7862ECF2E81002829AA /* RecipeListModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7852ECF2E81002829AA /* RecipeListModels.swift */; };
+		4270D7892ECF3231002829AA /* RecipeDetaiProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7882ECF3231002829AA /* RecipeDetaiProtocols.swift */; };
+		4270D78B2ECF326E002829AA /* RecipeDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D78A2ECF326E002829AA /* RecipeDetailViewController.swift */; };
+		4270D78D2ECF3931002829AA /* RecipeDetailPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D78C2ECF3931002829AA /* RecipeDetailPresenter.swift */; };
+		4270D78F2ECF3970002829AA /* RecipeDetailInteractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D78E2ECF3970002829AA /* RecipeDetailInteractor.swift */; };
+		4270D7912ECF39AB002829AA /* RecipeDetailRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7902ECF39AB002829AA /* RecipeDetailRouter.swift */; };
+		4270D7932ECF39CF002829AA /* RecipeDetailAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7922ECF39CF002829AA /* RecipeDetailAssembly.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -26,12 +33,19 @@
 		4257287C2ECF16EC00E95676 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		4257287D2ECF16EC00E95676 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		425728812ECF16EC00E95676 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
-		425728902ECF1E1400E95676 /* RecipeListProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeListProtocols.swift; sourceTree = "<group>"; };
+		425728902ECF1E1400E95676 /* RecipeListContracts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeListContracts.swift; sourceTree = "<group>"; };
 		425728922ECF1E8800E95676 /* RecipeListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeListViewController.swift; sourceTree = "<group>"; };
 		4270D77D2ECF2477002829AA /* RecipeListPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeListPresenter.swift; sourceTree = "<group>"; };
 		4270D77F2ECF25FE002829AA /* RecipeListAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeListAssembly.swift; sourceTree = "<group>"; };
 		4270D7812ECF2645002829AA /* RecipeListRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeListRouter.swift; sourceTree = "<group>"; };
 		4270D7832ECF266B002829AA /* RecipeListInteractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeListInteractor.swift; sourceTree = "<group>"; };
+		4270D7852ECF2E81002829AA /* RecipeListModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeListModels.swift; sourceTree = "<group>"; };
+		4270D7882ECF3231002829AA /* RecipeDetaiProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeDetaiProtocols.swift; sourceTree = "<group>"; };
+		4270D78A2ECF326E002829AA /* RecipeDetailViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeDetailViewController.swift; sourceTree = "<group>"; };
+		4270D78C2ECF3931002829AA /* RecipeDetailPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeDetailPresenter.swift; sourceTree = "<group>"; };
+		4270D78E2ECF3970002829AA /* RecipeDetailInteractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeDetailInteractor.swift; sourceTree = "<group>"; };
+		4270D7902ECF39AB002829AA /* RecipeDetailRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeDetailRouter.swift; sourceTree = "<group>"; };
+		4270D7922ECF39CF002829AA /* RecipeDetailAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeDetailAssembly.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -102,6 +116,7 @@
 			isa = PBXGroup;
 			children = (
 				4257288F2ECF1DAF00E95676 /* RecipeList */,
+				4270D7872ECF31EA002829AA /* RecipeDetail */,
 			);
 			path = Modules;
 			sourceTree = "<group>";
@@ -109,14 +124,28 @@
 		4257288F2ECF1DAF00E95676 /* RecipeList */ = {
 			isa = PBXGroup;
 			children = (
-				425728902ECF1E1400E95676 /* RecipeListProtocols.swift */,
+				425728902ECF1E1400E95676 /* RecipeListContracts.swift */,
 				425728922ECF1E8800E95676 /* RecipeListViewController.swift */,
 				4270D77D2ECF2477002829AA /* RecipeListPresenter.swift */,
 				4270D77F2ECF25FE002829AA /* RecipeListAssembly.swift */,
 				4270D7812ECF2645002829AA /* RecipeListRouter.swift */,
 				4270D7832ECF266B002829AA /* RecipeListInteractor.swift */,
+				4270D7852ECF2E81002829AA /* RecipeListModels.swift */,
 			);
 			path = RecipeList;
+			sourceTree = "<group>";
+		};
+		4270D7872ECF31EA002829AA /* RecipeDetail */ = {
+			isa = PBXGroup;
+			children = (
+				4270D7882ECF3231002829AA /* RecipeDetaiProtocols.swift */,
+				4270D78A2ECF326E002829AA /* RecipeDetailViewController.swift */,
+				4270D78C2ECF3931002829AA /* RecipeDetailPresenter.swift */,
+				4270D78E2ECF3970002829AA /* RecipeDetailInteractor.swift */,
+				4270D7902ECF39AB002829AA /* RecipeDetailRouter.swift */,
+				4270D7922ECF39CF002829AA /* RecipeDetailAssembly.swift */,
+			);
+			path = RecipeDetail;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -193,13 +222,20 @@
 			buildActionMask = 2147483647;
 			files = (
 				425728932ECF1E8800E95676 /* RecipeListViewController.swift in Sources */,
+				4270D7892ECF3231002829AA /* RecipeDetaiProtocols.swift in Sources */,
 				4270D77E2ECF2477002829AA /* RecipeListPresenter.swift in Sources */,
 				425728882ECF16EC00E95676 /* AppDelegate.swift in Sources */,
 				4270D7822ECF2645002829AA /* RecipeListRouter.swift in Sources */,
+				4270D78D2ECF3931002829AA /* RecipeDetailPresenter.swift in Sources */,
+				4270D7862ECF2E81002829AA /* RecipeListModels.swift in Sources */,
 				4270D7842ECF266B002829AA /* RecipeListInteractor.swift in Sources */,
+				4270D78B2ECF326E002829AA /* RecipeDetailViewController.swift in Sources */,
 				4270D7802ECF25FE002829AA /* RecipeListAssembly.swift in Sources */,
+				4270D78F2ECF3970002829AA /* RecipeDetailInteractor.swift in Sources */,
+				4270D7912ECF39AB002829AA /* RecipeDetailRouter.swift in Sources */,
 				425728892ECF16EC00E95676 /* SceneDelegate.swift in Sources */,
-				425728912ECF1E1400E95676 /* RecipeListProtocols.swift in Sources */,
+				4270D7932ECF39CF002829AA /* RecipeDetailAssembly.swift in Sources */,
+				425728912ECF1E1400E95676 /* RecipeListContracts.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

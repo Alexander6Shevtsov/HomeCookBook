@@ -38,6 +38,7 @@ final class RecipeListViewController: UIViewController {
 		tableView.separatorStyle = .singleLine
 		tableView.dataSource = self
 		tableView.delegate = self
+		
 		tableView.register(UITableViewCell.self, forCellReuseIdentifier: Constants.cellReuseId)
 		
 		view.addSubview(tableView)
@@ -71,14 +72,12 @@ extension RecipeListViewController: UITableViewDataSource {
 	}
 }
 
-
 extension RecipeListViewController: UITableViewDelegate {
 	func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
 		output?.didSelectItem(at: indexPath.row)
 		tableView.deselectRow(at: indexPath, animated: true)
 	}
 }
-
 
 extension RecipeListViewController: RecipeListViewInput {
 	func display(items: [RecipeListItemViewModel]) {
@@ -102,4 +101,3 @@ extension RecipeListViewController: RecipeListViewInput {
 		present(alert, animated: true)
 	}
 }
-
