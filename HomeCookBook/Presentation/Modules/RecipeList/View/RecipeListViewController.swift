@@ -22,13 +22,17 @@ final class RecipeListViewController: UIViewController {
 	private enum Constants {
 		static let sectionInset: CGFloat = 16
 		static let interItemSpacing: CGFloat = 12
-		static let lineSpacing: CGFloat = 12
+		static let lineSpacing: CGFloat = 16
 		static let cardCornerRadius: CGFloat = 12
 		static let imageAspectRatio: CGFloat = 0.75
+		static let contentPadding: CGFloat = 10
+		static let labelsSpacing: CGFloat = 4
+		
 		static let titleLines = 2
 		static let subtitleLines = 1
 		static let titleFont = UIFont.preferredFont(forTextStyle: .headline)
 		static let subtitleFont = UIFont.preferredFont(forTextStyle: .subheadline)
+		
 		static let title = "Recipes"
 	}
 	
@@ -46,9 +50,7 @@ final class RecipeListViewController: UIViewController {
 		super.init(nibName: nil, bundle: nil)
 	}
 	
-	required init?(coder: NSCoder) {
-		fatalError("init(coder:) has not been implemented")
-	}
+	required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 	
 	override func viewDidLoad() {
 		super.viewDidLoad()
@@ -98,9 +100,11 @@ final class RecipeListViewController: UIViewController {
 		let itemWidth = max(0, (width - totalHSpacing) / cols)
 		
 		let imageHeight = itemWidth * Constants.imageAspectRatio
+		
 		let titleHeight = Constants.titleFont.lineHeight * CGFloat(Constants.titleLines)
 		let subtitleHeight = Constants.subtitleFont.lineHeight * CGFloat(Constants.subtitleLines)
-		let verticalTextSpacing: CGFloat = 16 // суммарно
+		let verticalTextSpacing = Constants.contentPadding + Constants.labelsSpacing + Constants.contentPadding
+		
 		let itemHeight = imageHeight + titleHeight + subtitleHeight + verticalTextSpacing
 		return CGSize(width: floor(itemWidth), height: ceil(itemHeight))
 	}
