@@ -37,6 +37,8 @@ final class RecipeListViewController: UIViewController {
 		static let subtitleFont = UIFont.preferredFont(forTextStyle: .subheadline)
 		
 		static let title = "Recipes"
+		
+		static let prefetchThreshold = 6
 	}
 	
 	init() {
@@ -227,6 +229,16 @@ extension RecipeListViewController: UICollectionViewDelegate {
 		imageTasks[indexPath]?.cancel()
 		imageTasks[indexPath] = nil
 	}
+	
+	func collectionView(
+		_ collectionView: UICollectionView,
+		willDisplay cell: UICollectionViewCell,
+		forItemAt indexPath: IndexPath
+	) {
+		if indexPath.item == items.count - 1 {
+			output?.loadMore()
+		}
+	}
 }
 
 extension RecipeListViewController: UICollectionViewDelegateFlowLayout {
@@ -247,6 +259,12 @@ extension RecipeListViewController: UICollectionViewDataSourcePrefetching {
 		}
 		guard !urls.isEmpty else { return }
 		Task { await imageLoader.prefetch(urls: urls) }
+		
+		guard !items.isEmpty else { return }
+		if let maxIndex = indexPaths.map(\.item).max(),
+		   maxIndex >= max(0, items.count - Constants.prefetchThreshold) {
+			output?.loadMore()
+		}
 	}
 }
 
@@ -385,3 +403,4 @@ private final class StateOverlayView: UIView {
 		onRetry?()
 	}
 }
+

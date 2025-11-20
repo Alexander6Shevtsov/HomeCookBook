@@ -10,6 +10,7 @@ import Foundation
 protocol MealsService {
 	func fetchInitial() async throws -> [RecipeListItemEntity]
 	func fetch(query: String) async throws -> [RecipeListItemEntity]
+	func fetch(firstLetter: Character) async throws -> [RecipeListItemEntity]
 	func fetchDetails(id: String) async throws -> RecipeDetailEntity
 }
 
@@ -21,9 +22,14 @@ final class TheMealDBService: MealsService {
 	}
 	
 	func fetchInitial() async throws -> [RecipeListItemEntity] {
-		guard let url = URL(string: "https://www.themealdb.com/api/json/v1/1/search.php?f=a") else {
-			throw URLError(.badURL)
-		}
+		try await fetch(firstLetter: "a")
+	}
+	
+	func fetch(query: String) async throws -> [RecipeListItemEntity] {
+		var comps = URLComponents(string: "https://www.themealdb.com/api/json/v1/1/search.php")
+		comps?.queryItems = [URLQueryItem(name: "s", value: query)]
+		guard let url = comps?.url else { throw URLError(.badURL) }
+		
 		let response: MealSearchResponseDTO = try await client.get(url)
 		let meals = response.meals ?? []
 		return meals.map { dto in
@@ -36,11 +42,11 @@ final class TheMealDBService: MealsService {
 		}
 	}
 	
-	func fetch(query: String) async throws -> [RecipeListItemEntity] {
-		var comps = URLComponents(string: "https://www.themealdb.com/api/json/v1/1/search.php")
-		comps?.queryItems = [URLQueryItem(name: "s", value: query)]
-		guard let url = comps?.url else { throw URLError(.badURL) }
-		
+	func fetch(firstLetter: Character) async throws -> [RecipeListItemEntity] {
+		let letter = String(firstLetter).lowercased()
+		guard let url = URL(string: "https://www.themealdb.com/api/json/v1/1/search.php?f=\(letter)") else {
+			throw URLError(.badURL)
+		}
 		let response: MealSearchResponseDTO = try await client.get(url)
 		let meals = response.meals ?? []
 		return meals.map { dto in
@@ -69,3 +75,4 @@ final class TheMealDBService: MealsService {
 		)
 	}
 }
+

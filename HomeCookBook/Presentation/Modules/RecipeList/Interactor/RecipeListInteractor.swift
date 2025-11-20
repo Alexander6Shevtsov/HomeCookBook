@@ -13,6 +13,9 @@ final class RecipeListInteractor: RecipeListInteractorInput {
 	private let service: MealsService
 	private var currentTask: Task<Void, Never>?
 	
+	private let letters: [Character] = Array("abcdefghijklmnopqrstuvwxyz")
+	private var currentLetterIndex: Int?
+	
 	init(output: RecipeListInteractorOutput?, service: MealsService) {
 		self.output = output
 		self.service = service
@@ -23,23 +26,45 @@ final class RecipeListInteractor: RecipeListInteractorInput {
 	}
 	
 	func loadInitial() {
+		currentLetterIndex = 0
 		startNewTask {
-			let items = try await self.service.fetchInitial()
+			let letter = self.letters[self.currentLetterIndex ?? 0]
+			let items = try await self.service.fetch(firstLetter: letter)
 			await MainActor.run { self.output?.didLoad(items: items) }
 		}
 	}
 	
 	func refresh() {
+		currentLetterIndex = 0
 		startNewTask {
-			let items = try await self.service.fetchInitial()
+			let letter = self.letters[self.currentLetterIndex ?? 0]
+			let items = try await self.service.fetch(firstLetter: letter)
 			await MainActor.run { self.output?.didLoad(items: items) }
 		}
 	}
 	
 	func search(query: String) {
+		currentLetterIndex = nil
 		startNewTask {
 			let items = try await self.service.fetch(query: query)
 			await MainActor.run { self.output?.didLoad(items: items) }
+		}
+	}
+	
+	func loadMoreNextLetter() {
+		guard let idx = currentLetterIndex else { return }
+		let next = idx + 1
+		guard next < letters.count else {
+			Task { @MainActor in
+				self.output?.didLoadMore(items: [])
+			}
+			return
+		}
+		currentLetterIndex = next
+		startNewTask {
+			let letter = self.letters[next]
+			let items = try await self.service.fetch(firstLetter: letter)
+			await MainActor.run { self.output?.didLoadMore(items: items) }
 		}
 	}
 	
@@ -56,3 +81,4 @@ final class RecipeListInteractor: RecipeListInteractorInput {
 		}
 	}
 }
+

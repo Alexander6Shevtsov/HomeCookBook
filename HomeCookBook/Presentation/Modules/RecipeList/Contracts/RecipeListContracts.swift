@@ -20,19 +20,23 @@ protocol RecipeListViewOutput: AnyObject {
 	func refresh()
 	func search(query: String)
 	func retry()
+	func loadMore()
 }
 
 protocol RecipeListInteractorInput: AnyObject {
 	func loadInitial()
 	func refresh()
 	func search(query: String)
+	func loadMoreNextLetter()
 }
 
 protocol RecipeListInteractorOutput: AnyObject {
 	func didLoad(items: [RecipeListItemEntity])
+	func didLoadMore(items: [RecipeListItemEntity])
 	func didFailToLoad(error: Error)
 }
 
 protocol RecipeListRouterInput: AnyObject {
 	func routeToDetails(mealId: String)
 }
+
