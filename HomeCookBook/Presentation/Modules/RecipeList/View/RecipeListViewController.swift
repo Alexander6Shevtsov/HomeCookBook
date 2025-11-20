@@ -20,7 +20,6 @@ final class RecipeListViewController: UIViewController {
 	private let imageLoader = ImageLoader.shared
 	private var imageTasks: [IndexPath: Task<Void, Never>] = [:]
 	
-	// Оверлей для пустого состояния/ошибки
 	private let stateView = StateOverlayView()
 	
 	private enum Constants {
@@ -67,7 +66,6 @@ final class RecipeListViewController: UIViewController {
 		title = Constants.title
 		navigationItem.largeTitleDisplayMode = .always
 		
-		// Search
 		searchController.searchResultsUpdater = self
 		searchController.obscuresBackgroundDuringPresentation = false
 		searchController.searchBar.autocapitalizationType = .none
@@ -79,12 +77,12 @@ final class RecipeListViewController: UIViewController {
 		collectionView.backgroundColor = .clear
 		collectionView.dataSource = self
 		collectionView.delegate = self
+		collectionView.prefetchDataSource = self
 		collectionView.register(RecipeCardCell.self, forCellWithReuseIdentifier: RecipeCardCell.reuseId)
 		
 		collectionView.refreshControl = refreshControl
 		refreshControl.addTarget(self, action: #selector(didPullToRefresh), for: .valueChanged)
 		
-		// State overlay
 		stateView.translatesAutoresizingMaskIntoConstraints = false
 		stateView.isHidden = true
 		stateView.onRetry = { [weak self] in
@@ -169,12 +167,21 @@ final class RecipeListViewController: UIViewController {
 }
 
 extension RecipeListViewController: UICollectionViewDataSource {
-	func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+	func collectionView(
+		_ collectionView: UICollectionView,
+		numberOfItemsInSection section: Int
+	) -> Int {
 		items.count
 	}
 	
-	func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-		let cell = collectionView.dequeueReusableCell(withReuseIdentifier: RecipeCardCell.reuseId, for: indexPath) as! RecipeCardCell
+	func collectionView(
+		_ collectionView: UICollectionView,
+		cellForItemAt indexPath: IndexPath
+	) -> UICollectionViewCell {
+		let cell = collectionView.dequeueReusableCell(
+			withReuseIdentifier: RecipeCardCell.reuseId,
+			for: indexPath
+		) as! RecipeCardCell
 		
 		let vm = items[indexPath.item]
 		cell.configure(title: vm.title, subtitle: vm.subtitle)
@@ -204,20 +211,42 @@ extension RecipeListViewController: UICollectionViewDataSource {
 }
 
 extension RecipeListViewController: UICollectionViewDelegate {
-	func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+	func collectionView(
+		_ collectionView: UICollectionView,
+		didSelectItemAt indexPath: IndexPath
+	) {
 		output?.didSelectItem(at: indexPath.item)
 		collectionView.deselectItem(at: indexPath, animated: true)
 	}
 	
-	func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+	func collectionView(
+		_ collectionView: UICollectionView,
+		didEndDisplaying cell: UICollectionViewCell,
+		forItemAt indexPath: IndexPath
+	) {
 		imageTasks[indexPath]?.cancel()
 		imageTasks[indexPath] = nil
 	}
 }
 
 extension RecipeListViewController: UICollectionViewDelegateFlowLayout {
-	func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+	func collectionView(
+		_ collectionView: UICollectionView,
+		layout collectionViewLayout: UICollectionViewLayout,
+		sizeForItemAt indexPath: IndexPath
+	) -> CGSize {
 		itemSize(for: collectionView.bounds.width)
+	}
+}
+
+extension RecipeListViewController: UICollectionViewDataSourcePrefetching {
+	func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
+		let urls = indexPaths.compactMap { indexPath -> URL? in
+			guard indexPath.item < items.count else { return nil }
+			return items[indexPath.item].thumbnailURL
+		}
+		guard !urls.isEmpty else { return }
+		Task { await imageLoader.prefetch(urls: urls) }
 	}
 }
 
@@ -227,7 +256,6 @@ extension RecipeListViewController: RecipeListViewInput {
 		self.items = items
 		collectionView.reloadData()
 		
-		// Пустое состояние
 		if items.isEmpty {
 			showEmptyState()
 		} else {
@@ -263,7 +291,6 @@ extension RecipeListViewController: RecipeListViewInput {
 	}
 	
 	func showError(message: String) {
-		// Вместо алерта показываем оверлей с Retry
 		showErrorState(message: message)
 	}
 }
@@ -275,7 +302,6 @@ extension RecipeListViewController: UISearchResultsUpdating {
 	}
 }
 
-// MARK: - Внутренний оверлей пустого/ошибочного состояния
 private final class StateOverlayView: UIView {
 	var onRetry: (() -> Void)?
 	
