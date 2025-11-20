@@ -8,13 +8,13 @@
 import UIKit
 
 final class RecipeListRouter: RecipeListRouterInput {
-
+	
 	private weak var viewController: UIViewController?
-
+	
 	init(viewController: UIViewController) {
 		self.viewController = viewController
 	}
-
+	
 	func routeToDetails(mealId: String) {
 		// TODO: заменить на реальный RecipeDetailAssembly.build(mealId:).
 		let alert = UIAlertController(title: "Open Details", message: "Meal ID: \(mealId)", preferredStyle: .alert)

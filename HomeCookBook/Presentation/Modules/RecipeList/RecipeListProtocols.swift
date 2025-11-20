@@ -34,3 +34,4 @@ protocol RecipeListInteractorOutput: AnyObject {
 protocol RecipeListRouterInput: AnyObject {
 	func routeToDetails(mealId: String)
 }
+

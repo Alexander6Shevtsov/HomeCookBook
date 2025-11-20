@@ -8,9 +8,9 @@
 import UIKit
 
 final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
-
+	
 	var window: UIWindow?
-
+	
 	func scene(
 		_ scene: UIScene,
 		willConnectTo session: UISceneSession,
@@ -21,10 +21,11 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 		let root = RecipeListAssembly.build()
 		let nav = UINavigationController(rootViewController: root)
 		nav.navigationBar.prefersLargeTitles = true 
-
+		
 		window.rootViewController = nav
 		self.window = window
 		window.makeKeyAndVisible()
 	}
 }
+
 
