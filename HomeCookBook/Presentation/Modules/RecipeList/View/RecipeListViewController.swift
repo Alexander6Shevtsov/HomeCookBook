@@ -11,18 +11,43 @@ final class RecipeListViewController: UIViewController {
 	
 	var output: RecipeListViewOutput?
 	
-	private let tableView = UITableView(frame: .zero, style: .plain)
+	private let collectionView: UICollectionView
 	private let refreshControl = UIRefreshControl()
+	
 	private var items: [RecipeListItemViewModel] = []
+	
 	private let imageLoader = ImageLoader.shared
 	private var imageTasks: [IndexPath: Task<Void, Never>] = [:]
 	
 	private enum Constants {
-		static let rowHeight: CGFloat = 72
-		static let cellReuseId = "RecipeCell"
+		static let sectionInset: CGFloat = 16
+		static let interItemSpacing: CGFloat = 12
+		static let lineSpacing: CGFloat = 12
+		static let cardCornerRadius: CGFloat = 12
+		static let imageAspectRatio: CGFloat = 0.75
+		static let titleLines = 2
+		static let subtitleLines = 1
+		static let titleFont = UIFont.preferredFont(forTextStyle: .headline)
+		static let subtitleFont = UIFont.preferredFont(forTextStyle: .subheadline)
 		static let title = "Recipes"
-		static let imageSize = CGSize(width: 56, height: 56)
-		static let imageCornerRadius: CGFloat = 8
+	}
+	
+	init() {
+		let layout = UICollectionViewFlowLayout()
+		layout.minimumInteritemSpacing = Constants.interItemSpacing
+		layout.minimumLineSpacing = Constants.lineSpacing
+		layout.sectionInset = UIEdgeInsets(
+			top: Constants.sectionInset,
+			left: Constants.sectionInset,
+			bottom: Constants.sectionInset,
+			right: Constants.sectionInset
+		)
+		self.collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
+		super.init(nibName: nil, bundle: nil)
+	}
+	
+	required init?(coder: NSCoder) {
+		fatalError("init(coder:) has not been implemented")
 	}
 	
 	override func viewDidLoad() {
@@ -36,24 +61,21 @@ final class RecipeListViewController: UIViewController {
 		title = Constants.title
 		navigationItem.largeTitleDisplayMode = .always
 		
-		tableView.translatesAutoresizingMaskIntoConstraints = false
-		tableView.backgroundColor = .clear
-		tableView.rowHeight = Constants.rowHeight
-		tableView.separatorStyle = .singleLine
-		tableView.dataSource = self
-		tableView.delegate = self
-		tableView.register(UITableViewCell.self, forCellReuseIdentifier: Constants.cellReuseId)
-		tableView.refreshControl = refreshControl
+		collectionView.translatesAutoresizingMaskIntoConstraints = false
+		collectionView.backgroundColor = .clear
+		collectionView.dataSource = self
+		collectionView.delegate = self
+		collectionView.register(RecipeCardCell.self, forCellWithReuseIdentifier: RecipeCardCell.reuseId)
 		
+		collectionView.refreshControl = refreshControl
 		refreshControl.addTarget(self, action: #selector(didPullToRefresh), for: .valueChanged)
 		
-		view.addSubview(tableView)
-		
+		view.addSubview(collectionView)
 		NSLayoutConstraint.activate([
-			tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-			tableView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
-			tableView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
-			tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+			collectionView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+			collectionView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+			collectionView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+			collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
 		])
 	}
 	
@@ -61,70 +83,64 @@ final class RecipeListViewController: UIViewController {
 		output?.refresh()
 	}
 	
-	private func applyPlaceholderConfig(to cell: UITableViewCell, vm: RecipeListItemViewModel) {
-		var config = cell.defaultContentConfiguration()
-		config.text = vm.title
-		config.secondaryText = vm.subtitle
-		config.image = UIImage(systemName: "photo")
-		config.imageProperties.preferredSymbolConfiguration = .init(
-			pointSize: 20,
-			weight: .regular
-		)
-		config.imageProperties.maximumSize = Constants.imageSize
-		config.imageProperties.reservedLayoutSize = Constants.imageSize
-		config.imageProperties.cornerRadius = Constants.imageCornerRadius
-		cell.contentConfiguration = config
-		cell.accessoryType = .disclosureIndicator
+	private func columns(for width: CGFloat) -> Int {
+		if traitCollection.horizontalSizeClass == .regular && width > 700 { return 3 }
+		return 2
 	}
 	
-	private func applyImage(_ image: UIImage, to cell: UITableViewCell, vm: RecipeListItemViewModel) {
-		var config = cell.defaultContentConfiguration()
-		config.text = vm.title
-		config.secondaryText = vm.subtitle
-		config.image = image
-		config.imageProperties.maximumSize = Constants.imageSize
-		config.imageProperties.reservedLayoutSize = Constants.imageSize
-		config.imageProperties.cornerRadius = Constants.imageCornerRadius
-		cell.contentConfiguration = config
-		cell.accessoryType = .disclosureIndicator
+	private func itemSize(for width: CGFloat) -> CGSize {
+		let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout
+		let sectionInsets = layout?.sectionInset ?? .zero
+		let inter = layout?.minimumInteritemSpacing ?? Constants.interItemSpacing
+		
+		let cols = CGFloat(columns(for: width))
+		let totalHSpacing = sectionInsets.left + sectionInsets.right + inter * max(0, cols - 1)
+		let itemWidth = max(0, (width - totalHSpacing) / cols)
+		
+		let imageHeight = itemWidth * Constants.imageAspectRatio
+		let titleHeight = Constants.titleFont.lineHeight * CGFloat(Constants.titleLines)
+		let subtitleHeight = Constants.subtitleFont.lineHeight * CGFloat(Constants.subtitleLines)
+		let verticalTextSpacing: CGFloat = 16 // суммарно
+		let itemHeight = imageHeight + titleHeight + subtitleHeight + verticalTextSpacing
+		return CGSize(width: floor(itemWidth), height: ceil(itemHeight))
 	}
 	
 	private func cancelAllImageTasks() {
 		imageTasks.values.forEach { $0.cancel() }
 		imageTasks.removeAll()
 	}
+	
+	override func viewWillLayoutSubviews() {
+		super.viewWillLayoutSubviews()
+		(collectionView.collectionViewLayout as? UICollectionViewFlowLayout)?.invalidateLayout()
+	}
 }
 
-extension RecipeListViewController: UITableViewDataSource {
-	func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+extension RecipeListViewController: UICollectionViewDataSource {
+	func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
 		items.count
 	}
 	
-	func tableView(
-		_ tableView: UITableView,
-		cellForRowAt indexPath: IndexPath
-	) -> UITableViewCell {
-		let cell = tableView.dequeueReusableCell(
-			withIdentifier: Constants.cellReuseId,
-			for: indexPath
-		)
-		let vm = items[indexPath.row]
+	func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+		let cell = collectionView.dequeueReusableCell(withReuseIdentifier: RecipeCardCell.reuseId, for: indexPath) as! RecipeCardCell
 		
-		applyPlaceholderConfig(to: cell, vm: vm)
+		let vm = items[indexPath.item]
+		cell.configure(title: vm.title, subtitle: vm.subtitle)
+		cell.setPlaceholder()
 		
 		imageTasks[indexPath]?.cancel()
 		imageTasks[indexPath] = nil
 		
 		if let url = vm.thumbnailURL {
-			let task = Task { [weak self, weak tableView] in
+			let task = Task { [weak self, weak collectionView] in
 				guard let self else { return }
 				if let image = try? await self.imageLoader.image(from: url) {
 					await MainActor.run {
 						guard
-							let tableView,
-							let visibleCell = tableView.cellForRow(at: indexPath)
+							let collectionView,
+							let visibleCell = collectionView.cellForItem(at: indexPath) as? RecipeCardCell
 						else { return }
-						self.applyImage(image, to: visibleCell, vm: vm)
+						visibleCell.setImage(image)
 					}
 				}
 			}
@@ -135,19 +151,21 @@ extension RecipeListViewController: UITableViewDataSource {
 	}
 }
 
-extension RecipeListViewController: UITableViewDelegate {
-	func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-		output?.didSelectItem(at: indexPath.row)
-		tableView.deselectRow(at: indexPath, animated: true)
+extension RecipeListViewController: UICollectionViewDelegate {
+	func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+		output?.didSelectItem(at: indexPath.item)
+		collectionView.deselectItem(at: indexPath, animated: true)
 	}
 	
-	func tableView(
-		_ tableView: UITableView,
-		didEndDisplaying cell: UITableViewCell,
-		forRowAt indexPath: IndexPath
-	) {
+	func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
 		imageTasks[indexPath]?.cancel()
 		imageTasks[indexPath] = nil
+	}
+}
+
+extension RecipeListViewController: UICollectionViewDelegateFlowLayout {
+	func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+		itemSize(for: collectionView.bounds.width)
 	}
 }
 
@@ -155,7 +173,7 @@ extension RecipeListViewController: RecipeListViewInput {
 	func display(items: [RecipeListItemViewModel]) {
 		cancelAllImageTasks()
 		self.items = items
-		tableView.reloadData()
+		collectionView.reloadData()
 	}
 	
 	func showLoading(_ isLoading: Bool) {
@@ -170,16 +188,16 @@ extension RecipeListViewController: RecipeListViewInput {
 	
 	func showRefreshing(_ isRefreshing: Bool) {
 		if isRefreshing {
-			if !refreshControl.isRefreshing {
-				refreshControl.beginRefreshing()
-				if tableView.contentOffset.y == 0 {
-					let offset = CGPoint(x: 0, y: -refreshControl.frame.size.height)
-					tableView.setContentOffset(offset, animated: true)
+			if !(collectionView.refreshControl?.isRefreshing ?? false) {
+				collectionView.refreshControl?.beginRefreshing()
+				if collectionView.contentOffset.y == 0 {
+					let offset = CGPoint(x: 0, y: -(collectionView.refreshControl?.frame.size.height ?? 0))
+					collectionView.setContentOffset(offset, animated: true)
 				}
 			}
 		} else {
-			if refreshControl.isRefreshing {
-				refreshControl.endRefreshing()
+			if collectionView.refreshControl?.isRefreshing == true {
+				collectionView.refreshControl?.endRefreshing()
 			}
 		}
 	}
