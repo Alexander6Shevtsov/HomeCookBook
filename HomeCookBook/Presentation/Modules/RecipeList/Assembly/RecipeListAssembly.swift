@@ -24,4 +24,3 @@ enum RecipeListAssembly {
 		return view
 	}
 }
-

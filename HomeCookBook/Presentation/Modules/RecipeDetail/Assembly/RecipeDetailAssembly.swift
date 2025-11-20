@@ -11,7 +11,11 @@ enum RecipeDetailAssembly {
 	static func build(mealId: String) -> UIViewController {
 		let view = RecipeDetailViewController()
 		let router = RecipeDetailRouter(viewController: view)
-		let interactor = RecipeDetailInteractor(mealId: mealId, output: nil)
+		
+		let networkClient = URLSessionNetworkClient()
+		let service = TheMealDBService(client: networkClient)
+		let interactor = RecipeDetailInteractor(mealId: mealId, service: service, output: nil)
+		
 		let presenter = RecipeDetailPresenter(
 			view: view,
 			interactor: interactor,

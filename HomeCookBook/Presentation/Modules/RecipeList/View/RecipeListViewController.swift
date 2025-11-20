@@ -9,7 +9,7 @@ import UIKit
 
 final class RecipeListViewController: UIViewController {
 	
-	weak var output: RecipeListViewOutput?
+	var output: RecipeListViewOutput?
 	
 	private let tableView = UITableView(frame: .zero, style: .plain)
 	

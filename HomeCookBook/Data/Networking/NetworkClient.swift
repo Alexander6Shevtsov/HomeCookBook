@@ -20,11 +20,13 @@ final class URLSessionNetworkClient: NetworkClient {
 	
 	func get<T: Decodable>(_ url: URL) async throws -> T {
 		let (data, response) = try await session.data(from: url)
+		
 		guard let http = response as? HTTPURLResponse, 200..<300 ~= http.statusCode else {
 			throw URLError(.badServerResponse)
 		}
+		
 		let decoder = JSONDecoder()
-		decoder.keyDecodingStrategy = .convertFromSnakeCase
+		decoder.keyDecodingStrategy = .useDefaultKeys
 		return try decoder.decode(T.self, from: data)
 	}
 }

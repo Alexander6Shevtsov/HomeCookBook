@@ -12,7 +12,6 @@ final class RecipeListPresenter {
 	private weak var view: RecipeListViewInput?
 	
 	private let interactor: RecipeListInteractorInput
-	
 	private let router: RecipeListRouterInput
 	
 	private var viewModels: [RecipeListItemViewModel] = []
@@ -37,7 +36,6 @@ final class RecipeListPresenter {
 	}
 }
 
-
 extension RecipeListPresenter: RecipeListViewOutput {
 	func viewDidLoad() {
 		view?.showLoading(true)
@@ -50,7 +48,6 @@ extension RecipeListPresenter: RecipeListViewOutput {
 		router.routeToDetails(mealId: vm.id)
 	}
 }
-
 
 extension RecipeListPresenter: RecipeListInteractorOutput {
 	func didLoad(items: [RecipeListItemEntity]) {
@@ -65,5 +62,4 @@ extension RecipeListPresenter: RecipeListInteractorOutput {
 		view?.showError(message: error.localizedDescription)
 	}
 }
-
 

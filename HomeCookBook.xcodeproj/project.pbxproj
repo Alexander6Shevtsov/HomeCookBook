@@ -28,6 +28,7 @@
 		4270D7972ECF3B62002829AA /* MealSearchDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7962ECF3B62002829AA /* MealSearchDTO.swift */; };
 		4270D7992ECF3B64002829AA /* TheMealDBService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7982ECF3B64002829AA /* TheMealDBService.swift */; };
 		4270D7A12ECF3F40002829AA /* RecipeListItemEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7A02ECF3F40002829AA /* RecipeListItemEntity.swift */; };
+		4270D7B02ECF43B2002829AA /* MealLookupDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7AF2ECF43B2002829AA /* MealLookupDTO.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -54,6 +55,7 @@
 		4270D7962ECF3B62002829AA /* MealSearchDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealSearchDTO.swift; sourceTree = "<group>"; };
 		4270D7982ECF3B64002829AA /* TheMealDBService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TheMealDBService.swift; sourceTree = "<group>"; };
 		4270D7A02ECF3F40002829AA /* RecipeListItemEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeListItemEntity.swift; sourceTree = "<group>"; };
+		4270D7AF2ECF43B2002829AA /* MealLookupDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealLookupDTO.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -180,6 +182,7 @@
 			isa = PBXGroup;
 			children = (
 				4270D7962ECF3B62002829AA /* MealSearchDTO.swift */,
+				4270D7AF2ECF43B2002829AA /* MealLookupDTO.swift */,
 			);
 			path = DTO;
 			sourceTree = "<group>";
@@ -387,6 +390,7 @@
 			files = (
 				425728932ECF1E8800E95676 /* RecipeListViewController.swift in Sources */,
 				4270D7A12ECF3F40002829AA /* RecipeListItemEntity.swift in Sources */,
+				4270D7B02ECF43B2002829AA /* MealLookupDTO.swift in Sources */,
 				4270D7892ECF3231002829AA /* RecipeDetailContracts.swift in Sources */,
 				4270D7992ECF3B64002829AA /* TheMealDBService.swift in Sources */,
 				4270D77E2ECF2477002829AA /* RecipeListPresenter.swift in Sources */,

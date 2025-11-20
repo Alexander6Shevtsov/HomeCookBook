@@ -7,11 +7,12 @@
 
 import Foundation
 
-protocol RecipeListService {
+protocol MealsService {
 	func fetchInitial() async throws -> [RecipeListItemEntity]
+	func fetchDetails(id: String) async throws -> RecipeDetailEntity
 }
 
-final class TheMealDBService: RecipeListService {
+final class TheMealDBService: MealsService {
 	private let client: NetworkClient
 	
 	init(client: NetworkClient) {
@@ -19,8 +20,7 @@ final class TheMealDBService: RecipeListService {
 	}
 	
 	func fetchInitial() async throws -> [RecipeListItemEntity] {
-		// Пустой поиск вернет широкий список блюд
-		guard let url = URL(string: "https://www.themealdb.com/api/json/v1/1/search.php?s=") else {
+		guard let url = URL(string: "https://www.themealdb.com/api/json/v1/1/search.php?f=a") else {
 			throw URLError(.badURL)
 		}
 		let response: MealSearchResponseDTO = try await client.get(url)
@@ -33,5 +33,21 @@ final class TheMealDBService: RecipeListService {
 				thumbnailURL: dto.strMealThumb.flatMap(URL.init(string:))
 			)
 		}
+	}
+	
+	func fetchDetails(id: String) async throws -> RecipeDetailEntity {
+		guard let url = URL(string: "https://www.themealdb.com/api/json/v1/1/lookup.php?i=\(id)") else {
+			throw URLError(.badURL)
+		}
+		let response: MealLookupResponseDTO = try await client.get(url)
+		guard let dto = response.meals?.first else {
+			throw URLError(.cannotParseResponse)
+		}
+		return RecipeDetailEntity(
+			id: dto.idMeal,
+			title: dto.strMeal,
+			imageURL: dto.strMealThumb.flatMap(URL.init(string:)),
+			instructions: dto.strInstructions ?? ""
+		)
 	}
 }

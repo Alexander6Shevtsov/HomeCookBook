@@ -9,7 +9,7 @@ import UIKit
 
 final class RecipeDetailViewController: UIViewController {
 	
-	weak var output: RecipeDetailViewOutput?
+	var output: RecipeDetailViewOutput?
 	
 	private let imageView = UIImageView()
 	private let textView = UITextView()
@@ -88,4 +88,3 @@ extension RecipeDetailViewController: RecipeDetailViewInput {
 		present(alert, animated: true)
 	}
 }
-

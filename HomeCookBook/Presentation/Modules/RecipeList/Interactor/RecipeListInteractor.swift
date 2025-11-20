@@ -10,9 +10,9 @@ import Foundation
 final class RecipeListInteractor: RecipeListInteractorInput {
 	
 	private weak var output: RecipeListInteractorOutput?
-	private let service: RecipeListService
+	private let service: MealsService
 	
-	init(output: RecipeListInteractorOutput?, service: RecipeListService) {
+	init(output: RecipeListInteractorOutput?, service: MealsService) {
 		self.output = output
 		self.service = service
 	}
@@ -37,4 +37,3 @@ final class RecipeListInteractor: RecipeListInteractorInput {
 		}
 	}
 }
-

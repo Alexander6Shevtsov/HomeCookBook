@@ -6,3 +6,11 @@
 //
 
 import Foundation
+
+struct RecipeListItemEntity {
+	let id: String
+	let name: String
+	let category: String?
+	let thumbnailURL: URL?
+}
+

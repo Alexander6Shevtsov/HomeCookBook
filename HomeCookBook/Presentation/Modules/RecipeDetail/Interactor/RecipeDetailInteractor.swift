@@ -11,9 +11,11 @@ final class RecipeDetailInteractor: RecipeDetailInteractorInput {
 	
 	private weak var output: RecipeDetailInteractorOutput?
 	private let mealId: String
+	private let service: MealsService
 	
-	init(mealId: String, output: RecipeDetailInteractorOutput?) {
+	init(mealId: String, service: MealsService, output: RecipeDetailInteractorOutput?) {
 		self.mealId = mealId
+		self.service = service
 		self.output = output
 	}
 	
@@ -22,16 +24,18 @@ final class RecipeDetailInteractor: RecipeDetailInteractorInput {
 	}
 	
 	func loadDetails() {
-		DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 0.2) { [weak self] in
+		Task { [weak self] in
 			guard let self else { return }
-			let demo = RecipeDetailEntity(
-				id: self.mealId,
-				title: "Sample Meal \(self.mealId)",
-				imageURL: URL(string: "https://www.themealdb.com/images/media/meals/wvpsxx1468256321.jpg"),
-				instructions: "1) Prep ingredients.\n2) Cook gently.\n3) Serve hot."
-			)
-			self.output?.didLoad(details: demo)
+			do {
+				let details = try await service.fetchDetails(id: mealId)
+				await MainActor.run {
+					self.output?.didLoad(details: details)
+				}
+			} catch {
+				await MainActor.run {
+					self.output?.didFailToLoad(error: error)
+				}
+			}
 		}
 	}
 }
-
