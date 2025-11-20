@@ -14,6 +14,15 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
 		_ application: UIApplication,
 		didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
 	) -> Bool {
+		NotificationCenter.default.addObserver(
+			forName: UIApplication.didReceiveMemoryWarningNotification,
+			object: nil,
+			queue: .main
+		) { _ in
+			Task {
+				await ImageLoader.shared.clearCache()
+			}
+		}
 		return true
 	}
 	
@@ -27,5 +36,3 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
 		return config
 	}
 }
-
-

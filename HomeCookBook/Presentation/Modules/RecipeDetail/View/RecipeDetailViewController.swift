@@ -77,8 +77,10 @@ extension RecipeDetailViewController: RecipeDetailViewInput {
 				guard let self else { return }
 				if let image = try? await self.imageLoader.image(from: url) {
 					await MainActor.run {
-						self.imageView.image = image
-						self.imageView.tintColor = nil
+						UIView.transition(with: self.imageView, duration: 0.25, options: .transitionCrossDissolve, animations: {
+							self.imageView.image = image
+							self.imageView.tintColor = nil
+						}, completion: nil)
 					}
 				}
 			}
@@ -101,3 +103,4 @@ extension RecipeDetailViewController: RecipeDetailViewInput {
 		present(alert, animated: true)
 	}
 }
+

@@ -131,7 +131,10 @@ final class RecipeCardCell: UICollectionViewCell {
 	}
 	
 	func setImage(_ image: UIImage) {
-		imageView.image = image
-		imageView.tintColor = nil
+		UIView.transition(with: imageView, duration: 0.2, options: .transitionCrossDissolve, animations: {
+			self.imageView.image = image
+			self.imageView.tintColor = nil
+		}, completion: nil)
 	}
 }
+
