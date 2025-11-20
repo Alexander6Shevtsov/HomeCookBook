@@ -12,9 +12,8 @@ final class RecipeListViewController: UIViewController {
 	var output: RecipeListViewOutput?
 	
 	private let tableView = UITableView(frame: .zero, style: .plain)
-	
+	private let refreshControl = UIRefreshControl()
 	private var items: [RecipeListItemViewModel] = []
-	
 	private let imageLoader = ImageLoader.shared
 	private var imageTasks: [IndexPath: Task<Void, Never>] = [:]
 	
@@ -23,6 +22,7 @@ final class RecipeListViewController: UIViewController {
 		static let cellReuseId = "RecipeCell"
 		static let title = "Recipes"
 		static let imageSize = CGSize(width: 56, height: 56)
+		static let imageCornerRadius: CGFloat = 8
 	}
 	
 	override func viewDidLoad() {
@@ -42,8 +42,10 @@ final class RecipeListViewController: UIViewController {
 		tableView.separatorStyle = .singleLine
 		tableView.dataSource = self
 		tableView.delegate = self
-		
 		tableView.register(UITableViewCell.self, forCellReuseIdentifier: Constants.cellReuseId)
+		tableView.refreshControl = refreshControl
+		
+		refreshControl.addTarget(self, action: #selector(didPullToRefresh), for: .valueChanged)
 		
 		view.addSubview(tableView)
 		
@@ -53,6 +55,43 @@ final class RecipeListViewController: UIViewController {
 			tableView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
 			tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
 		])
+	}
+	
+	@objc private func didPullToRefresh() {
+		output?.refresh()
+	}
+	
+	private func applyPlaceholderConfig(to cell: UITableViewCell, vm: RecipeListItemViewModel) {
+		var config = cell.defaultContentConfiguration()
+		config.text = vm.title
+		config.secondaryText = vm.subtitle
+		config.image = UIImage(systemName: "photo")
+		config.imageProperties.preferredSymbolConfiguration = .init(
+			pointSize: 20,
+			weight: .regular
+		)
+		config.imageProperties.maximumSize = Constants.imageSize
+		config.imageProperties.reservedLayoutSize = Constants.imageSize
+		config.imageProperties.cornerRadius = Constants.imageCornerRadius
+		cell.contentConfiguration = config
+		cell.accessoryType = .disclosureIndicator
+	}
+	
+	private func applyImage(_ image: UIImage, to cell: UITableViewCell, vm: RecipeListItemViewModel) {
+		var config = cell.defaultContentConfiguration()
+		config.text = vm.title
+		config.secondaryText = vm.subtitle
+		config.image = image
+		config.imageProperties.maximumSize = Constants.imageSize
+		config.imageProperties.reservedLayoutSize = Constants.imageSize
+		config.imageProperties.cornerRadius = Constants.imageCornerRadius
+		cell.contentConfiguration = config
+		cell.accessoryType = .disclosureIndicator
+	}
+	
+	private func cancelAllImageTasks() {
+		imageTasks.values.forEach { $0.cancel() }
+		imageTasks.removeAll()
 	}
 }
 
@@ -65,17 +104,13 @@ extension RecipeListViewController: UITableViewDataSource {
 		_ tableView: UITableView,
 		cellForRowAt indexPath: IndexPath
 	) -> UITableViewCell {
-		let cell = tableView.dequeueReusableCell(withIdentifier: Constants.cellReuseId, for: indexPath)
+		let cell = tableView.dequeueReusableCell(
+			withIdentifier: Constants.cellReuseId,
+			for: indexPath
+		)
 		let vm = items[indexPath.row]
 		
-		var config = cell.defaultContentConfiguration()
-		config.text = vm.title
-		config.secondaryText = vm.subtitle
-		config.image = UIImage(systemName: "photo")
-		config.imageProperties.maximumSize = Constants.imageSize
-		config.imageProperties.cornerRadius = 8
-		cell.contentConfiguration = config
-		cell.accessoryType = .disclosureIndicator
+		applyPlaceholderConfig(to: cell, vm: vm)
 		
 		imageTasks[indexPath]?.cancel()
 		imageTasks[indexPath] = nil
@@ -89,13 +124,7 @@ extension RecipeListViewController: UITableViewDataSource {
 							let tableView,
 							let visibleCell = tableView.cellForRow(at: indexPath)
 						else { return }
-						var cfg = visibleCell.defaultContentConfiguration()
-						cfg.text = vm.title
-						cfg.secondaryText = vm.subtitle
-						cfg.image = image
-						cfg.imageProperties.maximumSize = Constants.imageSize
-						cfg.imageProperties.cornerRadius = 8
-						visibleCell.contentConfiguration = cfg
+						self.applyImage(image, to: visibleCell, vm: vm)
 					}
 				}
 			}
@@ -112,7 +141,11 @@ extension RecipeListViewController: UITableViewDelegate {
 		tableView.deselectRow(at: indexPath, animated: true)
 	}
 	
-	func tableView(_ tableView: UITableView, didEndDisplaying cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+	func tableView(
+		_ tableView: UITableView,
+		didEndDisplaying cell: UITableViewCell,
+		forRowAt indexPath: IndexPath
+	) {
 		imageTasks[indexPath]?.cancel()
 		imageTasks[indexPath] = nil
 	}
@@ -120,6 +153,7 @@ extension RecipeListViewController: UITableViewDelegate {
 
 extension RecipeListViewController: RecipeListViewInput {
 	func display(items: [RecipeListItemViewModel]) {
+		cancelAllImageTasks()
 		self.items = items
 		tableView.reloadData()
 	}
@@ -131,6 +165,22 @@ extension RecipeListViewController: RecipeListViewInput {
 			navigationItem.rightBarButtonItem = UIBarButtonItem(customView: activity)
 		} else {
 			navigationItem.rightBarButtonItem = nil
+		}
+	}
+	
+	func showRefreshing(_ isRefreshing: Bool) {
+		if isRefreshing {
+			if !refreshControl.isRefreshing {
+				refreshControl.beginRefreshing()
+				if tableView.contentOffset.y == 0 {
+					let offset = CGPoint(x: 0, y: -refreshControl.frame.size.height)
+					tableView.setContentOffset(offset, animated: true)
+				}
+			}
+		} else {
+			if refreshControl.isRefreshing {
+				refreshControl.endRefreshing()
+			}
 		}
 	}
 	

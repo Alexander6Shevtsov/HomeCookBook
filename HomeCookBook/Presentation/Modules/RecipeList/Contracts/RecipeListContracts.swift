@@ -9,25 +9,24 @@ import UIKit
 
 protocol RecipeListViewInput: AnyObject {
 	func display(items: [RecipeListItemViewModel])
-	
 	func showLoading(_ isLoading: Bool)
-	
+	func showRefreshing(_ isRefreshing: Bool)
 	func showError(message: String)
 }
 
 protocol RecipeListViewOutput: AnyObject {
 	func viewDidLoad()
-	
 	func didSelectItem(at index: Int)
+	func refresh()
 }
 
 protocol RecipeListInteractorInput: AnyObject {
 	func loadInitial()
+	func refresh()
 }
 
 protocol RecipeListInteractorOutput: AnyObject {
 	func didLoad(items: [RecipeListItemEntity])
-	
 	func didFailToLoad(error: Error)
 }
 

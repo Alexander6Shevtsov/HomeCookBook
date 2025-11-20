@@ -36,4 +36,20 @@ final class RecipeListInteractor: RecipeListInteractorInput {
 			}
 		}
 	}
+	
+	func refresh() {
+		Task { [weak self] in
+			guard let self else { return }
+			do {
+				let items = try await service.fetchInitial()
+				await MainActor.run {
+					self.output?.didLoad(items: items)
+				}
+			} catch {
+				await MainActor.run {
+					self.output?.didFailToLoad(error: error)
+				}
+			}
+		}
+	}
 }

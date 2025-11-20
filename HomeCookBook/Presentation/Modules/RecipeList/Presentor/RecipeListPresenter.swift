@@ -10,7 +10,6 @@ import Foundation
 final class RecipeListPresenter {
 	
 	private weak var view: RecipeListViewInput?
-	
 	private let interactor: RecipeListInteractorInput
 	private let router: RecipeListRouterInput
 	
@@ -47,6 +46,11 @@ extension RecipeListPresenter: RecipeListViewOutput {
 		let vm = viewModels[index]
 		router.routeToDetails(mealId: vm.id)
 	}
+	
+	func refresh() {
+		view?.showRefreshing(true)
+		interactor.refresh()
+	}
 }
 
 extension RecipeListPresenter: RecipeListInteractorOutput {
@@ -54,12 +58,13 @@ extension RecipeListPresenter: RecipeListInteractorOutput {
 		let vms = items.map(map(entity:))
 		self.viewModels = vms
 		view?.showLoading(false)
+		view?.showRefreshing(false)
 		view?.display(items: vms)
 	}
 	
 	func didFailToLoad(error: Error) {
 		view?.showLoading(false)
+		view?.showRefreshing(false)
 		view?.showError(message: error.localizedDescription)
 	}
 }
-
