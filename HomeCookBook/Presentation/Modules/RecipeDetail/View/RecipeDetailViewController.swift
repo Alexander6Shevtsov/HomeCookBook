@@ -13,6 +13,8 @@ final class RecipeDetailViewController: UIViewController {
 	
 	private let imageView = UIImageView()
 	private let textView = UITextView()
+	private let imageLoader = ImageLoader.shared
+	private var imageTask: Task<Void, Never>?
 	
 	private enum Constants {
 		static let title = "Recipe"
@@ -34,6 +36,8 @@ final class RecipeDetailViewController: UIViewController {
 		imageView.contentMode = .scaleAspectFill
 		imageView.clipsToBounds = true
 		imageView.backgroundColor = .secondarySystemBackground
+		imageView.image = UIImage(systemName: "photo")
+		imageView.tintColor = .tertiaryLabel
 		
 		textView.translatesAutoresizingMaskIntoConstraints = false
 		textView.isEditable = false
@@ -63,12 +67,21 @@ extension RecipeDetailViewController: RecipeDetailViewInput {
 		self.title = title
 		textView.text = instructions
 		
-		if imageURL != nil {
-			imageView.image = UIImage(systemName: "photo")
-			imageView.tintColor = .tertiaryLabel
-		} else {
-			imageView.image = UIImage(systemName: "photo")
-			imageView.tintColor = .tertiaryLabel
+		imageTask?.cancel()
+		imageTask = nil
+		imageView.image = UIImage(systemName: "photo")
+		imageView.tintColor = .tertiaryLabel
+		
+		if let url = imageURL {
+			imageTask = Task { [weak self] in
+				guard let self else { return }
+				if let image = try? await self.imageLoader.image(from: url) {
+					await MainActor.run {
+						self.imageView.image = image
+						self.imageView.tintColor = nil
+					}
+				}
+			}
 		}
 	}
 	

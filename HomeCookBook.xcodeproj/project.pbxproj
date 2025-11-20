@@ -29,6 +29,7 @@
 		4270D7992ECF3B64002829AA /* TheMealDBService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7982ECF3B64002829AA /* TheMealDBService.swift */; };
 		4270D7A12ECF3F40002829AA /* RecipeListItemEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7A02ECF3F40002829AA /* RecipeListItemEntity.swift */; };
 		4270D7B02ECF43B2002829AA /* MealLookupDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7AF2ECF43B2002829AA /* MealLookupDTO.swift */; };
+		4270D7B32ECF49B4002829AA /* ImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7B22ECF49B4002829AA /* ImageLoader.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -56,6 +57,7 @@
 		4270D7982ECF3B64002829AA /* TheMealDBService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TheMealDBService.swift; sourceTree = "<group>"; };
 		4270D7A02ECF3F40002829AA /* RecipeListItemEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeListItemEntity.swift; sourceTree = "<group>"; };
 		4270D7AF2ECF43B2002829AA /* MealLookupDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealLookupDTO.swift; sourceTree = "<group>"; };
+		4270D7B22ECF49B4002829AA /* ImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLoader.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -88,6 +90,7 @@
 		425728832ECF16EC00E95676 /* HomeCookBook */ = {
 			isa = PBXGroup;
 			children = (
+				4270D7B12ECF4997002829AA /* Utilities */,
 				4257288B2ECF1B6000E95676 /* App */,
 				4270D79A2ECF3EA8002829AA /* Data */,
 				4270D79E2ECF3F20002829AA /* Domain */,
@@ -315,6 +318,14 @@
 			path = Assembly;
 			sourceTree = "<group>";
 		};
+		4270D7B12ECF4997002829AA /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				4270D7B22ECF49B4002829AA /* ImageLoader.swift */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -402,6 +413,7 @@
 				4270D7842ECF266B002829AA /* RecipeListInteractor.swift in Sources */,
 				4270D78B2ECF326E002829AA /* RecipeDetailViewController.swift in Sources */,
 				4270D7802ECF25FE002829AA /* RecipeListAssembly.swift in Sources */,
+				4270D7B32ECF49B4002829AA /* ImageLoader.swift in Sources */,
 				4270D7972ECF3B62002829AA /* MealSearchDTO.swift in Sources */,
 				4270D78F2ECF3970002829AA /* RecipeDetailInteractor.swift in Sources */,
 				4270D7912ECF39AB002829AA /* RecipeDetailRouter.swift in Sources */,

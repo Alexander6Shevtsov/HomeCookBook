@@ -15,10 +15,14 @@ final class RecipeListViewController: UIViewController {
 	
 	private var items: [RecipeListItemViewModel] = []
 	
+	private let imageLoader = ImageLoader.shared
+	private var imageTasks: [IndexPath: Task<Void, Never>] = [:]
+	
 	private enum Constants {
 		static let rowHeight: CGFloat = 72
 		static let cellReuseId = "RecipeCell"
 		static let title = "Recipes"
+		static let imageSize = CGSize(width: 56, height: 56)
 	}
 	
 	override func viewDidLoad() {
@@ -63,11 +67,41 @@ extension RecipeListViewController: UITableViewDataSource {
 	) -> UITableViewCell {
 		let cell = tableView.dequeueReusableCell(withIdentifier: Constants.cellReuseId, for: indexPath)
 		let vm = items[indexPath.row]
+		
 		var config = cell.defaultContentConfiguration()
 		config.text = vm.title
 		config.secondaryText = vm.subtitle
+		config.image = UIImage(systemName: "photo")
+		config.imageProperties.maximumSize = Constants.imageSize
+		config.imageProperties.cornerRadius = 8
 		cell.contentConfiguration = config
 		cell.accessoryType = .disclosureIndicator
+		
+		imageTasks[indexPath]?.cancel()
+		imageTasks[indexPath] = nil
+		
+		if let url = vm.thumbnailURL {
+			let task = Task { [weak self, weak tableView] in
+				guard let self else { return }
+				if let image = try? await self.imageLoader.image(from: url) {
+					await MainActor.run {
+						guard
+							let tableView,
+							let visibleCell = tableView.cellForRow(at: indexPath)
+						else { return }
+						var cfg = visibleCell.defaultContentConfiguration()
+						cfg.text = vm.title
+						cfg.secondaryText = vm.subtitle
+						cfg.image = image
+						cfg.imageProperties.maximumSize = Constants.imageSize
+						cfg.imageProperties.cornerRadius = 8
+						visibleCell.contentConfiguration = cfg
+					}
+				}
+			}
+			imageTasks[indexPath] = task
+		}
+		
 		return cell
 	}
 }
@@ -76,6 +110,11 @@ extension RecipeListViewController: UITableViewDelegate {
 	func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
 		output?.didSelectItem(at: indexPath.row)
 		tableView.deselectRow(at: indexPath, animated: true)
+	}
+	
+	func tableView(_ tableView: UITableView, didEndDisplaying cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+		imageTasks[indexPath]?.cancel()
+		imageTasks[indexPath] = nil
 	}
 }
 
