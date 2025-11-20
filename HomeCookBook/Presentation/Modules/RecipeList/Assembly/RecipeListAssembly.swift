@@ -12,7 +12,9 @@ enum RecipeListAssembly {
 		let view = RecipeListViewController()
 		let router = RecipeListRouter(viewController: view)
 		
-		let interactor = RecipeListInteractor(output: nil)
+		let networkClient = URLSessionNetworkClient()
+		let service = TheMealDBService(client: networkClient)
+		let interactor = RecipeListInteractor(output: nil, service: service)
 		
 		let presenter = RecipeListPresenter(view: view, interactor: interactor, router: router)
 		

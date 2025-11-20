@@ -1,5 +1,5 @@
 //
-//  RecipeDetaiProtocols.swift
+//  RecipeDetailContracts.swift
 //  HomeCookBook
 //
 //  Created by Alexander Shevtsov on 20.11.2025.

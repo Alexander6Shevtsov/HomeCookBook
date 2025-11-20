@@ -18,12 +18,16 @@
 		4270D7822ECF2645002829AA /* RecipeListRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7812ECF2645002829AA /* RecipeListRouter.swift */; };
 		4270D7842ECF266B002829AA /* RecipeListInteractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7832ECF266B002829AA /* RecipeListInteractor.swift */; };
 		4270D7862ECF2E81002829AA /* RecipeListModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7852ECF2E81002829AA /* RecipeListModels.swift */; };
-		4270D7892ECF3231002829AA /* RecipeDetaiProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7882ECF3231002829AA /* RecipeDetaiProtocols.swift */; };
+		4270D7892ECF3231002829AA /* RecipeDetailContracts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7882ECF3231002829AA /* RecipeDetailContracts.swift */; };
 		4270D78B2ECF326E002829AA /* RecipeDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D78A2ECF326E002829AA /* RecipeDetailViewController.swift */; };
 		4270D78D2ECF3931002829AA /* RecipeDetailPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D78C2ECF3931002829AA /* RecipeDetailPresenter.swift */; };
 		4270D78F2ECF3970002829AA /* RecipeDetailInteractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D78E2ECF3970002829AA /* RecipeDetailInteractor.swift */; };
 		4270D7912ECF39AB002829AA /* RecipeDetailRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7902ECF39AB002829AA /* RecipeDetailRouter.swift */; };
 		4270D7932ECF39CF002829AA /* RecipeDetailAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7922ECF39CF002829AA /* RecipeDetailAssembly.swift */; };
+		4270D7952ECF3B61002829AA /* NetworkClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7942ECF3B61002829AA /* NetworkClient.swift */; };
+		4270D7972ECF3B62002829AA /* MealSearchDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7962ECF3B62002829AA /* MealSearchDTO.swift */; };
+		4270D7992ECF3B64002829AA /* TheMealDBService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7982ECF3B64002829AA /* TheMealDBService.swift */; };
+		4270D7A12ECF3F40002829AA /* RecipeListItemEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7A02ECF3F40002829AA /* RecipeListItemEntity.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -40,12 +44,16 @@
 		4270D7812ECF2645002829AA /* RecipeListRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeListRouter.swift; sourceTree = "<group>"; };
 		4270D7832ECF266B002829AA /* RecipeListInteractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeListInteractor.swift; sourceTree = "<group>"; };
 		4270D7852ECF2E81002829AA /* RecipeListModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeListModels.swift; sourceTree = "<group>"; };
-		4270D7882ECF3231002829AA /* RecipeDetaiProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeDetaiProtocols.swift; sourceTree = "<group>"; };
+		4270D7882ECF3231002829AA /* RecipeDetailContracts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeDetailContracts.swift; sourceTree = "<group>"; };
 		4270D78A2ECF326E002829AA /* RecipeDetailViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeDetailViewController.swift; sourceTree = "<group>"; };
 		4270D78C2ECF3931002829AA /* RecipeDetailPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeDetailPresenter.swift; sourceTree = "<group>"; };
 		4270D78E2ECF3970002829AA /* RecipeDetailInteractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeDetailInteractor.swift; sourceTree = "<group>"; };
 		4270D7902ECF39AB002829AA /* RecipeDetailRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeDetailRouter.swift; sourceTree = "<group>"; };
 		4270D7922ECF39CF002829AA /* RecipeDetailAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeDetailAssembly.swift; sourceTree = "<group>"; };
+		4270D7942ECF3B61002829AA /* NetworkClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkClient.swift; sourceTree = "<group>"; };
+		4270D7962ECF3B62002829AA /* MealSearchDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealSearchDTO.swift; sourceTree = "<group>"; };
+		4270D7982ECF3B64002829AA /* TheMealDBService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TheMealDBService.swift; sourceTree = "<group>"; };
+		4270D7A02ECF3F40002829AA /* RecipeListItemEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeListItemEntity.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -79,6 +87,8 @@
 			isa = PBXGroup;
 			children = (
 				4257288B2ECF1B6000E95676 /* App */,
+				4270D79A2ECF3EA8002829AA /* Data */,
+				4270D79E2ECF3F20002829AA /* Domain */,
 				4257288D2ECF1D7500E95676 /* Presentation */,
 				4257288C2ECF1B8100E95676 /* Resources */,
 				4257287E2ECF16EC00E95676 /* LaunchScreen.storyboard */,
@@ -124,13 +134,13 @@
 		4257288F2ECF1DAF00E95676 /* RecipeList */ = {
 			isa = PBXGroup;
 			children = (
-				425728902ECF1E1400E95676 /* RecipeListContracts.swift */,
-				425728922ECF1E8800E95676 /* RecipeListViewController.swift */,
-				4270D77D2ECF2477002829AA /* RecipeListPresenter.swift */,
-				4270D77F2ECF25FE002829AA /* RecipeListAssembly.swift */,
-				4270D7812ECF2645002829AA /* RecipeListRouter.swift */,
-				4270D7832ECF266B002829AA /* RecipeListInteractor.swift */,
-				4270D7852ECF2E81002829AA /* RecipeListModels.swift */,
+				4270D7A22ECF3F7C002829AA /* Contracts */,
+				4270D7A32ECF3F98002829AA /* Models */,
+				4270D7A42ECF3FBB002829AA /* View */,
+				4270D7A52ECF3FC8002829AA /* Presentor */,
+				4270D7A62ECF3FD8002829AA /* Interactor */,
+				4270D7A72ECF3FE9002829AA /* Router */,
+				4270D7A82ECF3FFD002829AA /* Assembly */,
 			);
 			path = RecipeList;
 			sourceTree = "<group>";
@@ -138,14 +148,168 @@
 		4270D7872ECF31EA002829AA /* RecipeDetail */ = {
 			isa = PBXGroup;
 			children = (
-				4270D7882ECF3231002829AA /* RecipeDetaiProtocols.swift */,
-				4270D78A2ECF326E002829AA /* RecipeDetailViewController.swift */,
-				4270D78C2ECF3931002829AA /* RecipeDetailPresenter.swift */,
-				4270D78E2ECF3970002829AA /* RecipeDetailInteractor.swift */,
-				4270D7902ECF39AB002829AA /* RecipeDetailRouter.swift */,
-				4270D7922ECF39CF002829AA /* RecipeDetailAssembly.swift */,
+				4270D7A92ECF404D002829AA /* Contracts */,
+				4270D7AA2ECF4063002829AA /* View */,
+				4270D7AB2ECF406C002829AA /* Presenter */,
+				4270D7AC2ECF407A002829AA /* Interactor */,
+				4270D7AD2ECF408E002829AA /* Router */,
+				4270D7AE2ECF409E002829AA /* Assembly */,
 			);
 			path = RecipeDetail;
+			sourceTree = "<group>";
+		};
+		4270D79A2ECF3EA8002829AA /* Data */ = {
+			isa = PBXGroup;
+			children = (
+				4270D79B2ECF3EBE002829AA /* Networking */,
+				4270D79C2ECF3EE1002829AA /* DTO */,
+				4270D79D2ECF3EEF002829AA /* Services */,
+			);
+			path = Data;
+			sourceTree = "<group>";
+		};
+		4270D79B2ECF3EBE002829AA /* Networking */ = {
+			isa = PBXGroup;
+			children = (
+				4270D7942ECF3B61002829AA /* NetworkClient.swift */,
+			);
+			path = Networking;
+			sourceTree = "<group>";
+		};
+		4270D79C2ECF3EE1002829AA /* DTO */ = {
+			isa = PBXGroup;
+			children = (
+				4270D7962ECF3B62002829AA /* MealSearchDTO.swift */,
+			);
+			path = DTO;
+			sourceTree = "<group>";
+		};
+		4270D79D2ECF3EEF002829AA /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				4270D7982ECF3B64002829AA /* TheMealDBService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		4270D79E2ECF3F20002829AA /* Domain */ = {
+			isa = PBXGroup;
+			children = (
+				4270D79F2ECF3F29002829AA /* Entities */,
+			);
+			path = Domain;
+			sourceTree = "<group>";
+		};
+		4270D79F2ECF3F29002829AA /* Entities */ = {
+			isa = PBXGroup;
+			children = (
+				4270D7A02ECF3F40002829AA /* RecipeListItemEntity.swift */,
+			);
+			path = Entities;
+			sourceTree = "<group>";
+		};
+		4270D7A22ECF3F7C002829AA /* Contracts */ = {
+			isa = PBXGroup;
+			children = (
+				425728902ECF1E1400E95676 /* RecipeListContracts.swift */,
+			);
+			path = Contracts;
+			sourceTree = "<group>";
+		};
+		4270D7A32ECF3F98002829AA /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				4270D7852ECF2E81002829AA /* RecipeListModels.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		4270D7A42ECF3FBB002829AA /* View */ = {
+			isa = PBXGroup;
+			children = (
+				425728922ECF1E8800E95676 /* RecipeListViewController.swift */,
+			);
+			path = View;
+			sourceTree = "<group>";
+		};
+		4270D7A52ECF3FC8002829AA /* Presentor */ = {
+			isa = PBXGroup;
+			children = (
+				4270D77D2ECF2477002829AA /* RecipeListPresenter.swift */,
+			);
+			path = Presentor;
+			sourceTree = "<group>";
+		};
+		4270D7A62ECF3FD8002829AA /* Interactor */ = {
+			isa = PBXGroup;
+			children = (
+				4270D7832ECF266B002829AA /* RecipeListInteractor.swift */,
+			);
+			path = Interactor;
+			sourceTree = "<group>";
+		};
+		4270D7A72ECF3FE9002829AA /* Router */ = {
+			isa = PBXGroup;
+			children = (
+				4270D7812ECF2645002829AA /* RecipeListRouter.swift */,
+			);
+			path = Router;
+			sourceTree = "<group>";
+		};
+		4270D7A82ECF3FFD002829AA /* Assembly */ = {
+			isa = PBXGroup;
+			children = (
+				4270D77F2ECF25FE002829AA /* RecipeListAssembly.swift */,
+			);
+			path = Assembly;
+			sourceTree = "<group>";
+		};
+		4270D7A92ECF404D002829AA /* Contracts */ = {
+			isa = PBXGroup;
+			children = (
+				4270D7882ECF3231002829AA /* RecipeDetailContracts.swift */,
+			);
+			path = Contracts;
+			sourceTree = "<group>";
+		};
+		4270D7AA2ECF4063002829AA /* View */ = {
+			isa = PBXGroup;
+			children = (
+				4270D78A2ECF326E002829AA /* RecipeDetailViewController.swift */,
+			);
+			path = View;
+			sourceTree = "<group>";
+		};
+		4270D7AB2ECF406C002829AA /* Presenter */ = {
+			isa = PBXGroup;
+			children = (
+				4270D78C2ECF3931002829AA /* RecipeDetailPresenter.swift */,
+			);
+			path = Presenter;
+			sourceTree = "<group>";
+		};
+		4270D7AC2ECF407A002829AA /* Interactor */ = {
+			isa = PBXGroup;
+			children = (
+				4270D78E2ECF3970002829AA /* RecipeDetailInteractor.swift */,
+			);
+			path = Interactor;
+			sourceTree = "<group>";
+		};
+		4270D7AD2ECF408E002829AA /* Router */ = {
+			isa = PBXGroup;
+			children = (
+				4270D7902ECF39AB002829AA /* RecipeDetailRouter.swift */,
+			);
+			path = Router;
+			sourceTree = "<group>";
+		};
+		4270D7AE2ECF409E002829AA /* Assembly */ = {
+			isa = PBXGroup;
+			children = (
+				4270D7922ECF39CF002829AA /* RecipeDetailAssembly.swift */,
+			);
+			path = Assembly;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -222,15 +386,19 @@
 			buildActionMask = 2147483647;
 			files = (
 				425728932ECF1E8800E95676 /* RecipeListViewController.swift in Sources */,
-				4270D7892ECF3231002829AA /* RecipeDetaiProtocols.swift in Sources */,
+				4270D7A12ECF3F40002829AA /* RecipeListItemEntity.swift in Sources */,
+				4270D7892ECF3231002829AA /* RecipeDetailContracts.swift in Sources */,
+				4270D7992ECF3B64002829AA /* TheMealDBService.swift in Sources */,
 				4270D77E2ECF2477002829AA /* RecipeListPresenter.swift in Sources */,
 				425728882ECF16EC00E95676 /* AppDelegate.swift in Sources */,
 				4270D7822ECF2645002829AA /* RecipeListRouter.swift in Sources */,
 				4270D78D2ECF3931002829AA /* RecipeDetailPresenter.swift in Sources */,
 				4270D7862ECF2E81002829AA /* RecipeListModels.swift in Sources */,
+				4270D7952ECF3B61002829AA /* NetworkClient.swift in Sources */,
 				4270D7842ECF266B002829AA /* RecipeListInteractor.swift in Sources */,
 				4270D78B2ECF326E002829AA /* RecipeDetailViewController.swift in Sources */,
 				4270D7802ECF25FE002829AA /* RecipeListAssembly.swift in Sources */,
+				4270D7972ECF3B62002829AA /* MealSearchDTO.swift in Sources */,
 				4270D78F2ECF3970002829AA /* RecipeDetailInteractor.swift in Sources */,
 				4270D7912ECF39AB002829AA /* RecipeDetailRouter.swift in Sources */,
 				425728892ECF16EC00E95676 /* SceneDelegate.swift in Sources */,
