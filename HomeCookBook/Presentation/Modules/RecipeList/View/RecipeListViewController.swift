@@ -20,6 +20,9 @@ final class RecipeListViewController: UIViewController {
 	private let imageLoader = ImageLoader.shared
 	private var imageTasks: [IndexPath: Task<Void, Never>] = [:]
 	
+	// Оверлей для пустого состояния/ошибки
+	private let stateView = StateOverlayView()
+	
 	private enum Constants {
 		static let sectionInset: CGFloat = 16
 		static let interItemSpacing: CGFloat = 12
@@ -81,12 +84,26 @@ final class RecipeListViewController: UIViewController {
 		collectionView.refreshControl = refreshControl
 		refreshControl.addTarget(self, action: #selector(didPullToRefresh), for: .valueChanged)
 		
+		// State overlay
+		stateView.translatesAutoresizingMaskIntoConstraints = false
+		stateView.isHidden = true
+		stateView.onRetry = { [weak self] in
+			self?.output?.retry()
+		}
+		
 		view.addSubview(collectionView)
+		view.addSubview(stateView)
+		
 		NSLayoutConstraint.activate([
 			collectionView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
 			collectionView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
 			collectionView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
-			collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+			collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+			
+			stateView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+			stateView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+			stateView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+			stateView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
 		])
 	}
 	
@@ -119,6 +136,30 @@ final class RecipeListViewController: UIViewController {
 	private func cancelAllImageTasks() {
 		imageTasks.values.forEach { $0.cancel() }
 		imageTasks.removeAll()
+	}
+	
+	private func showEmptyState() {
+		stateView.isHidden = false
+		stateView.configure(
+			symbolName: "magnifyingglass",
+			title: "No Results",
+			message: "Try another query or clear the search.",
+			buttonTitle: nil
+		)
+	}
+	
+	private func showErrorState(message: String) {
+		stateView.isHidden = false
+		stateView.configure(
+			symbolName: "exclamationmark.triangle",
+			title: "Something went wrong",
+			message: message,
+			buttonTitle: "Retry"
+		)
+	}
+	
+	private func hideState() {
+		stateView.isHidden = true
 	}
 	
 	override func viewWillLayoutSubviews() {
@@ -185,10 +226,18 @@ extension RecipeListViewController: RecipeListViewInput {
 		cancelAllImageTasks()
 		self.items = items
 		collectionView.reloadData()
+		
+		// Пустое состояние
+		if items.isEmpty {
+			showEmptyState()
+		} else {
+			hideState()
+		}
 	}
 	
 	func showLoading(_ isLoading: Bool) {
 		if isLoading {
+			hideState()
 			let activity = UIActivityIndicatorView(style: .medium)
 			activity.startAnimating()
 			navigationItem.rightBarButtonItem = UIBarButtonItem(customView: activity)
@@ -214,9 +263,8 @@ extension RecipeListViewController: RecipeListViewInput {
 	}
 	
 	func showError(message: String) {
-		let alert = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
-		alert.addAction(UIAlertAction(title: "OK", style: .default))
-		present(alert, animated: true)
+		// Вместо алерта показываем оверлей с Retry
+		showErrorState(message: message)
 	}
 }
 
@@ -224,5 +272,90 @@ extension RecipeListViewController: UISearchResultsUpdating {
 	func updateSearchResults(for searchController: UISearchController) {
 		let text = searchController.searchBar.text ?? ""
 		output?.search(query: text)
+	}
+}
+
+// MARK: - Внутренний оверлей пустого/ошибочного состояния
+private final class StateOverlayView: UIView {
+	var onRetry: (() -> Void)?
+	
+	private let stack = UIStackView()
+	private let symbolView = UIImageView()
+	private let titleLabel = UILabel()
+	private let messageLabel = UILabel()
+	private let retryButton = UIButton(type: .system)
+	
+	override init(frame: CGRect) {
+		super.init(frame: frame)
+		setup()
+	}
+	
+	required init?(coder: NSCoder) {
+		super.init(coder: coder)
+		setup()
+	}
+	
+	private func setup() {
+		backgroundColor = .systemBackground
+		
+		stack.translatesAutoresizingMaskIntoConstraints = false
+		stack.axis = .vertical
+		stack.alignment = .center
+		stack.spacing = 12
+		
+		symbolView.translatesAutoresizingMaskIntoConstraints = false
+		symbolView.tintColor = .tertiaryLabel
+		symbolView.contentMode = .scaleAspectFit
+		
+		titleLabel.translatesAutoresizingMaskIntoConstraints = false
+		titleLabel.font = UIFont.preferredFont(forTextStyle: .headline)
+		titleLabel.textColor = .label
+		titleLabel.numberOfLines = 0
+		titleLabel.textAlignment = .center
+		
+		messageLabel.translatesAutoresizingMaskIntoConstraints = false
+		messageLabel.font = UIFont.preferredFont(forTextStyle: .subheadline)
+		messageLabel.textColor = .secondaryLabel
+		messageLabel.numberOfLines = 0
+		messageLabel.textAlignment = .center
+		
+		retryButton.translatesAutoresizingMaskIntoConstraints = false
+		retryButton.setTitle("Retry", for: .normal)
+		retryButton.addTarget(self, action: #selector(didTapRetry), for: .touchUpInside)
+		
+		addSubview(stack)
+		stack.addArrangedSubview(symbolView)
+		stack.addArrangedSubview(titleLabel)
+		stack.addArrangedSubview(messageLabel)
+		stack.addArrangedSubview(retryButton)
+		
+		NSLayoutConstraint.activate([
+			stack.centerXAnchor.constraint(equalTo: centerXAnchor),
+			stack.centerYAnchor.constraint(equalTo: centerYAnchor),
+			stack.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor, constant: 24),
+			stack.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -24),
+			
+			symbolView.widthAnchor.constraint(equalToConstant: 48),
+			symbolView.heightAnchor.constraint(equalToConstant: 48)
+		])
+	}
+	
+	func configure(symbolName: String, title: String, message: String, buttonTitle: String?) {
+		let config = UIImage.SymbolConfiguration(pointSize: 44, weight: .regular)
+		symbolView.image = UIImage(systemName: symbolName, withConfiguration: config)
+		
+		titleLabel.text = title
+		messageLabel.text = message
+		
+		if let title = buttonTitle, !title.isEmpty {
+			retryButton.isHidden = false
+			retryButton.setTitle(title, for: .normal)
+		} else {
+			retryButton.isHidden = true
+		}
+	}
+	
+	@objc private func didTapRetry() {
+		onRetry?()
 	}
 }

@@ -19,6 +19,7 @@ protocol RecipeListViewOutput: AnyObject {
 	func didSelectItem(at index: Int)
 	func refresh()
 	func search(query: String)
+	func retry()
 }
 
 protocol RecipeListInteractorInput: AnyObject {

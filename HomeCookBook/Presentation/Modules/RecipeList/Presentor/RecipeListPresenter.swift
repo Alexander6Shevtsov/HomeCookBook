@@ -16,6 +16,13 @@ final class RecipeListPresenter {
 	private var viewModels: [RecipeListItemViewModel] = []
 	private var searchTask: Task<Void, Never>?
 	
+	private enum LastAction {
+		case initial
+		case refresh
+		case search(String)
+	}
+	private var lastAction: LastAction = .initial
+	
 	init(
 		view: RecipeListViewInput,
 		interactor: RecipeListInteractorInput,
@@ -38,6 +45,7 @@ final class RecipeListPresenter {
 
 extension RecipeListPresenter: RecipeListViewOutput {
 	func viewDidLoad() {
+		lastAction = .initial
 		view?.showLoading(true)
 		interactor.loadInitial()
 	}
@@ -49,6 +57,7 @@ extension RecipeListPresenter: RecipeListViewOutput {
 	}
 	
 	func refresh() {
+		lastAction = .refresh
 		view?.showRefreshing(true)
 		interactor.refresh()
 	}
@@ -60,6 +69,7 @@ extension RecipeListPresenter: RecipeListViewOutput {
 		searchTask = nil
 		
 		guard !trimmed.isEmpty else {
+			lastAction = .initial
 			view?.showLoading(true)
 			interactor.loadInitial()
 			return
@@ -68,8 +78,23 @@ extension RecipeListPresenter: RecipeListViewOutput {
 		searchTask = Task { [weak self] in
 			try? await Task.sleep(nanoseconds: 350_000_000)
 			guard let self, !Task.isCancelled else { return }
+			self.lastAction = .search(trimmed)
 			await MainActor.run { self.view?.showLoading(true) }
 			self.interactor.search(query: trimmed)
+		}
+	}
+	
+	func retry() {
+		switch lastAction {
+		case .initial:
+			view?.showLoading(true)
+			interactor.loadInitial()
+		case .refresh:
+			view?.showRefreshing(true)
+			interactor.refresh()
+		case .search(let q):
+			view?.showLoading(true)
+			interactor.search(query: q)
 		}
 	}
 }
