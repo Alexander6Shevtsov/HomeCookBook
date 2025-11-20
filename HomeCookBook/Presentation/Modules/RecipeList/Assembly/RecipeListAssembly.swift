@@ -10,10 +10,11 @@ import UIKit
 enum RecipeListAssembly {
 	static func build() -> UIViewController {
 		let view = RecipeListViewController()
-		let router = RecipeListRouter(viewController: view)
 		
 		let networkClient = URLSessionNetworkClient()
 		let service = TheMealDBService(client: networkClient)
+		
+		let router = RecipeListRouter(viewController: view, service: service)
 		let interactor = RecipeListInteractor(output: nil, service: service)
 		
 		let presenter = RecipeListPresenter(view: view, interactor: interactor, router: router)

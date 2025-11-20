@@ -8,15 +8,17 @@
 import UIKit
 
 final class RecipeListRouter: RecipeListRouterInput {
-	
 	private weak var viewController: UIViewController?
+	private let service: MealsService
 	
-	init(viewController: UIViewController) {
+	init(viewController: UIViewController, service: MealsService) {
 		self.viewController = viewController
+		self.service = service
 	}
 	
 	func routeToDetails(mealId: String) {
-		let details = RecipeDetailAssembly.build(mealId: mealId)
-		viewController?.navigationController?.pushViewController(details, animated: true)
+		let detailsVC = RecipeDetailAssembly.build(mealId: mealId, service: service)
+		viewController?.navigationController?.pushViewController(detailsVC, animated: true)
 	}
 }
+
