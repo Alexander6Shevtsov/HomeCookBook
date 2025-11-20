@@ -13,6 +13,7 @@ final class RecipeListViewController: UIViewController {
 	
 	private let collectionView: UICollectionView
 	private let refreshControl = UIRefreshControl()
+	private let searchController = UISearchController(searchResultsController: nil)
 	
 	private var items: [RecipeListItemViewModel] = []
 	
@@ -23,7 +24,7 @@ final class RecipeListViewController: UIViewController {
 		static let sectionInset: CGFloat = 16
 		static let interItemSpacing: CGFloat = 12
 		static let lineSpacing: CGFloat = 16
-		static let cardCornerRadius: CGFloat = 12
+		
 		static let imageAspectRatio: CGFloat = 0.75
 		static let contentPadding: CGFloat = 10
 		static let labelsSpacing: CGFloat = 4
@@ -63,6 +64,14 @@ final class RecipeListViewController: UIViewController {
 		title = Constants.title
 		navigationItem.largeTitleDisplayMode = .always
 		
+		// Search
+		searchController.searchResultsUpdater = self
+		searchController.obscuresBackgroundDuringPresentation = false
+		searchController.searchBar.autocapitalizationType = .none
+		searchController.searchBar.placeholder = "Search recipes"
+		navigationItem.searchController = searchController
+		definesPresentationContext = true
+		
 		collectionView.translatesAutoresizingMaskIntoConstraints = false
 		collectionView.backgroundColor = .clear
 		collectionView.dataSource = self
@@ -100,11 +109,9 @@ final class RecipeListViewController: UIViewController {
 		let itemWidth = max(0, (width - totalHSpacing) / cols)
 		
 		let imageHeight = itemWidth * Constants.imageAspectRatio
-		
 		let titleHeight = Constants.titleFont.lineHeight * CGFloat(Constants.titleLines)
 		let subtitleHeight = Constants.subtitleFont.lineHeight * CGFloat(Constants.subtitleLines)
 		let verticalTextSpacing = Constants.contentPadding + Constants.labelsSpacing + Constants.contentPadding
-		
 		let itemHeight = imageHeight + titleHeight + subtitleHeight + verticalTextSpacing
 		return CGSize(width: floor(itemWidth), height: ceil(itemHeight))
 	}
@@ -210,5 +217,12 @@ extension RecipeListViewController: RecipeListViewInput {
 		let alert = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
 		alert.addAction(UIAlertAction(title: "OK", style: .default))
 		present(alert, animated: true)
+	}
+}
+
+extension RecipeListViewController: UISearchResultsUpdating {
+	func updateSearchResults(for searchController: UISearchController) {
+		let text = searchController.searchBar.text ?? ""
+		output?.search(query: text)
 	}
 }

@@ -14,6 +14,7 @@ final class RecipeListPresenter {
 	private let router: RecipeListRouterInput
 	
 	private var viewModels: [RecipeListItemViewModel] = []
+	private var searchTask: Task<Void, Never>?
 	
 	init(
 		view: RecipeListViewInput,
@@ -50,6 +51,26 @@ extension RecipeListPresenter: RecipeListViewOutput {
 	func refresh() {
 		view?.showRefreshing(true)
 		interactor.refresh()
+	}
+	
+	func search(query: String) {
+		let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+		
+		searchTask?.cancel()
+		searchTask = nil
+		
+		guard !trimmed.isEmpty else {
+			view?.showLoading(true)
+			interactor.loadInitial()
+			return
+		}
+		
+		searchTask = Task { [weak self] in
+			try? await Task.sleep(nanoseconds: 350_000_000)
+			guard let self, !Task.isCancelled else { return }
+			await MainActor.run { self.view?.showLoading(true) }
+			self.interactor.search(query: trimmed)
+		}
 	}
 }
 

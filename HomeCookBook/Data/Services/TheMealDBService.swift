@@ -9,6 +9,7 @@ import Foundation
 
 protocol MealsService {
 	func fetchInitial() async throws -> [RecipeListItemEntity]
+	func fetch(query: String) async throws -> [RecipeListItemEntity]
 	func fetchDetails(id: String) async throws -> RecipeDetailEntity
 }
 
@@ -23,6 +24,23 @@ final class TheMealDBService: MealsService {
 		guard let url = URL(string: "https://www.themealdb.com/api/json/v1/1/search.php?f=a") else {
 			throw URLError(.badURL)
 		}
+		let response: MealSearchResponseDTO = try await client.get(url)
+		let meals = response.meals ?? []
+		return meals.map { dto in
+			RecipeListItemEntity(
+				id: dto.idMeal,
+				name: dto.strMeal,
+				category: dto.strCategory,
+				thumbnailURL: dto.strMealThumb.flatMap(URL.init(string:))
+			)
+		}
+	}
+	
+	func fetch(query: String) async throws -> [RecipeListItemEntity] {
+		var comps = URLComponents(string: "https://www.themealdb.com/api/json/v1/1/search.php")
+		comps?.queryItems = [URLQueryItem(name: "s", value: query)]
+		guard let url = comps?.url else { throw URLError(.badURL) }
+		
 		let response: MealSearchResponseDTO = try await client.get(url)
 		let meals = response.meals ?? []
 		return meals.map { dto in

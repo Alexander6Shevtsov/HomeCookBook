@@ -18,11 +18,13 @@ protocol RecipeListViewOutput: AnyObject {
 	func viewDidLoad()
 	func didSelectItem(at index: Int)
 	func refresh()
+	func search(query: String)
 }
 
 protocol RecipeListInteractorInput: AnyObject {
 	func loadInitial()
 	func refresh()
+	func search(query: String)
 }
 
 protocol RecipeListInteractorOutput: AnyObject {

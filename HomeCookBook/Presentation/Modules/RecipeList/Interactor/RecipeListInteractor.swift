@@ -11,6 +11,7 @@ final class RecipeListInteractor: RecipeListInteractorInput {
 	
 	private weak var output: RecipeListInteractorOutput?
 	private let service: MealsService
+	private var currentTask: Task<Void, Never>?
 	
 	init(output: RecipeListInteractorOutput?, service: MealsService) {
 		self.output = output
@@ -22,33 +23,35 @@ final class RecipeListInteractor: RecipeListInteractorInput {
 	}
 	
 	func loadInitial() {
-		Task { [weak self] in
-			guard let self else { return }
-			do {
-				let items = try await service.fetchInitial()
-				await MainActor.run {
-					self.output?.didLoad(items: items)
-				}
-			} catch {
-				await MainActor.run {
-					self.output?.didFailToLoad(error: error)
-				}
-			}
+		startNewTask {
+			let items = try await self.service.fetchInitial()
+			await MainActor.run { self.output?.didLoad(items: items) }
 		}
 	}
 	
 	func refresh() {
-		Task { [weak self] in
+		startNewTask {
+			let items = try await self.service.fetchInitial()
+			await MainActor.run { self.output?.didLoad(items: items) }
+		}
+	}
+	
+	func search(query: String) {
+		startNewTask {
+			let items = try await self.service.fetch(query: query)
+			await MainActor.run { self.output?.didLoad(items: items) }
+		}
+	}
+	
+	private func startNewTask(_ work: @escaping () async throws -> Void) {
+		currentTask?.cancel()
+		currentTask = Task { [weak self] in
 			guard let self else { return }
 			do {
-				let items = try await service.fetchInitial()
-				await MainActor.run {
-					self.output?.didLoad(items: items)
-				}
+				try await work()
 			} catch {
-				await MainActor.run {
-					self.output?.didFailToLoad(error: error)
-				}
+				guard !Task.isCancelled else { return }
+				await MainActor.run { self.output?.didFailToLoad(error: error) }
 			}
 		}
 	}
