@@ -13,6 +13,7 @@ final class RecipeDetailViewController: UIViewController {
 	
 	var favoritesStore: FavoritesStore = FavoritesStoreImpl()
 	var mealId: String = ""
+	var initialTitle: String? 
 	
 	private let imageView = UIImageView()
 	private let textView = UITextView()
@@ -53,7 +54,7 @@ final class RecipeDetailViewController: UIViewController {
 	
 	private func setupUI() {
 		view.backgroundColor = .systemBackground
-		title = Constants.title
+		title = initialTitle ?? Constants.title
 		
 		imageView.translatesAutoresizingMaskIntoConstraints = false
 		imageView.contentMode = .scaleAspectFill

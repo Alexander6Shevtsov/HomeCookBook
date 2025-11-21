@@ -36,6 +36,6 @@ protocol RecipeListInteractorOutput: AnyObject {
 }
 
 protocol RecipeListRouterInput: AnyObject {
-	func routeToDetails(mealId: String)
+	func routeToDetails(mealId: String, initialTitle: String?)
 	func routeToFavorites()
 }

@@ -10,12 +10,15 @@ import UIKit
 enum RecipeDetailAssembly {
 	static func build(
 		mealId: String,
+		initialTitle: String?,
 		service: MealsService,
 		favoritesStore: FavoritesStore
 	) -> UIViewController {
 		let view = RecipeDetailViewController()
 		view.mealId = mealId
 		view.favoritesStore = favoritesStore
+		view.initialTitle = initialTitle
+		view.title = initialTitle ?? "Recipe"
 		
 		let router = RecipeDetailRouter(viewController: view)
 		let interactor = RecipeDetailInteractor(mealId: mealId, service: service, output: nil)

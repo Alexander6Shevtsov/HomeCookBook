@@ -18,15 +18,20 @@ final class RecipeListRouter: RecipeListRouterInput {
 		self.favoritesStore = favoritesStore
 	}
 	
-	func routeToDetails(mealId: String) {
-		let detailsVC = RecipeDetailAssembly.build(mealId: mealId, service: service, favoritesStore: favoritesStore)
+	func routeToDetails(mealId: String, initialTitle: String?) {
+		let detailsVC = RecipeDetailAssembly.build(
+			mealId: mealId,
+			initialTitle: initialTitle,
+			service: service,
+			favoritesStore: favoritesStore
+		)
 		viewController?.navigationController?.pushViewController(detailsVC, animated: true)
 	}
 	
 	func routeToFavorites() {
 		let favoritesVC = FavoritesListViewController(favoritesStore: favoritesStore)
 		favoritesVC.onSelect = { [weak self] mealId in
-			self?.routeToDetails(mealId: mealId)
+			self?.routeToDetails(mealId: mealId, initialTitle: nil)
 		}
 		viewController?.navigationController?.pushViewController(favoritesVC, animated: true)
 	}

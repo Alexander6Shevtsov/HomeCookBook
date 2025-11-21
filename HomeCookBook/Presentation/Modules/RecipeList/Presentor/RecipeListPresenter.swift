@@ -68,7 +68,7 @@ extension RecipeListPresenter: RecipeListViewOutput {
 	func didSelectItem(at index: Int) {
 		guard index >= 0, index < viewModels.count else { return }
 		let viewModel = viewModels[index]
-		router.routeToDetails(mealId: viewModel.id)
+		router.routeToDetails(mealId: viewModel.id, initialTitle: viewModel.title)
 	}
 	
 	func refresh() {
@@ -191,4 +191,3 @@ extension RecipeListPresenter: RecipeListInteractorOutput {
 		view?.showError(message: error.localizedDescription)
 	}
 }
-
