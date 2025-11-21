@@ -9,8 +9,6 @@ import UIKit
 
 protocol RecipeListViewInput: AnyObject {
 	func display(items: [RecipeListItemViewModel])
-	func showLoading(_ isLoading: Bool)
-	func showRefreshing(_ isRefreshing: Bool)
 	func showError(message: String)
 }
 

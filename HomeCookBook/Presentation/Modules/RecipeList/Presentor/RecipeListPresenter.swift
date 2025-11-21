@@ -47,9 +47,9 @@ final class RecipeListPresenter {
 		)
 	}
 	
-	private func resetPagination(with vms: [RecipeListItemViewModel]) {
-		allViewModels = vms
-		let firstSlice = Array(vms.prefix(pageSize))
+	private func resetPagination(with newViewModels: [RecipeListItemViewModel]) {
+		allViewModels = newViewModels
+		let firstSlice = Array(newViewModels.prefix(pageSize))
 		viewModels = firstSlice
 	}
 	
@@ -62,7 +62,6 @@ extension RecipeListPresenter: RecipeListViewOutput {
 	func viewDidLoad() {
 		lastAction = .initial
 		hasMoreServerData = true
-		view?.showLoading(true)
 		interactor.loadInitial()
 	}
 	
@@ -75,7 +74,6 @@ extension RecipeListPresenter: RecipeListViewOutput {
 	func refresh() {
 		lastAction = .refresh
 		hasMoreServerData = true
-		view?.showRefreshing(true)
 		interactor.refresh()
 	}
 	
@@ -88,7 +86,6 @@ extension RecipeListPresenter: RecipeListViewOutput {
 		guard !trimmed.isEmpty else {
 			lastAction = .initial
 			hasMoreServerData = true
-			view?.showLoading(true)
 			interactor.loadInitial()
 			return
 		}
@@ -98,7 +95,6 @@ extension RecipeListPresenter: RecipeListViewOutput {
 			guard let self, !Task.isCancelled else { return }
 			self.lastAction = .search(trimmed)
 			self.hasMoreServerData = false
-			await MainActor.run { self.view?.showLoading(true) }
 			self.interactor.search(query: trimmed)
 		}
 	}
@@ -107,15 +103,12 @@ extension RecipeListPresenter: RecipeListViewOutput {
 		switch lastAction {
 		case .initial:
 			hasMoreServerData = true
-			view?.showLoading(true)
 			interactor.loadInitial()
 		case .refresh:
 			hasMoreServerData = true
-			view?.showRefreshing(true)
 			interactor.refresh()
 		case .search(let q):
 			hasMoreServerData = false
-			view?.showLoading(true)
 			interactor.search(query: q)
 		}
 	}
@@ -152,8 +145,8 @@ extension RecipeListPresenter: RecipeListViewOutput {
 
 extension RecipeListPresenter: RecipeListInteractorOutput {
 	func didLoad(items: [RecipeListItemEntity]) {
-		let vms = items.map(map(entity:))
-		resetPagination(with: vms)
+		let mappedViewModels = items.map(map(entity:))
+		resetPagination(with: mappedViewModels)
 		
 		switch lastAction {
 		case .initial, .refresh:
@@ -162,22 +155,20 @@ extension RecipeListPresenter: RecipeListInteractorOutput {
 			hasMoreServerData = false
 		}
 		
-		view?.showLoading(false)
-		view?.showRefreshing(false)
 		view?.display(items: viewModels)
 	}
 	
 	func didLoadMore(items: [RecipeListItemEntity]) {
-		let vms = items.map(map(entity:))
+		let mappedViewModels = items.map(map(entity:))
 		
-		if vms.isEmpty {
+		if mappedViewModels.isEmpty {
 			hasMoreServerData = false
 			isLoadingMore = false
 			return
 		}
 		
 		let existingIds = Set(allViewModels.map(\.id))
-		let unique = vms.filter { !existingIds.contains($0.id) }
+		let unique = mappedViewModels.filter { !existingIds.contains($0.id) }
 		allViewModels.append(contentsOf: unique)
 		
 		let currentCount = viewModels.count
@@ -192,8 +183,6 @@ extension RecipeListPresenter: RecipeListInteractorOutput {
 	}
 	
 	func didFailToLoad(error: Error) {
-		view?.showLoading(false)
-		view?.showRefreshing(false)
 		isLoadingMore = false
 		view?.showError(message: error.localizedDescription)
 	}

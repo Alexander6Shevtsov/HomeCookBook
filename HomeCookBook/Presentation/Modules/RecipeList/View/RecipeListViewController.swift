@@ -12,7 +12,6 @@ final class RecipeListViewController: UIViewController {
 	var output: RecipeListViewOutput?
 	
 	private let collectionView: UICollectionView
-	private let refreshControl = UIRefreshControl()
 	private let searchController = UISearchController(searchResultsController: nil)
 	
 	private var items: [RecipeListItemViewModel] = []
@@ -82,9 +81,6 @@ final class RecipeListViewController: UIViewController {
 		collectionView.prefetchDataSource = self
 		collectionView.register(RecipeCardCell.self, forCellWithReuseIdentifier: RecipeCardCell.reuseId)
 		
-		collectionView.refreshControl = refreshControl
-		refreshControl.addTarget(self, action: #selector(didPullToRefresh), for: .valueChanged)
-		
 		stateView.translatesAutoresizingMaskIntoConstraints = false
 		stateView.isHidden = true
 		stateView.onRetry = { [weak self] in
@@ -105,10 +101,6 @@ final class RecipeListViewController: UIViewController {
 			stateView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
 			stateView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
 		])
-	}
-	
-	@objc private func didPullToRefresh() {
-		output?.refresh()
 	}
 	
 	private func columns(for width: CGFloat) -> Int {
@@ -339,43 +331,6 @@ extension RecipeListViewController: RecipeListViewInput {
 		}
 	}
 	
-	func showLoading(_ isLoading: Bool) {
-		if isLoading {
-			hideState()
-			let activity = UIActivityIndicatorView(style: .medium)
-			activity.startAnimating()
-			navigationItem.rightBarButtonItem = UIBarButtonItem(customView: activity)
-		} else {
-			navigationItem.rightBarButtonItem = nil
-		}
-	}
-	
-	func showRefreshing(_ isRefreshing: Bool) {
-		if isRefreshing {
-			let topInset = collectionView.adjustedContentInset.top
-			let atTop = collectionView.contentOffset.y <= -topInset + 0.5
-			
-			if !atTop {
-				let targetOffset = CGPoint(x: 0, y: -topInset)
-				collectionView.setContentOffset(targetOffset, animated: true)
-			}
-			
-			DispatchQueue.main.async { [weak self] in
-				guard let self else { return }
-				if self.collectionView.refreshControl?.isRefreshing != true {
-					self.collectionView.refreshControl?.beginRefreshing()
-				}
-			}
-		} else {
-			DispatchQueue.main.async { [weak self] in
-				guard let self else { return }
-				if self.collectionView.refreshControl?.isRefreshing == true {
-					self.collectionView.refreshControl?.endRefreshing()
-				}
-			}
-		}
-	}
-	
 	func showError(message: String) {
 		showErrorState(message: message)
 	}
@@ -471,3 +426,4 @@ private final class StateOverlayView: UIView {
 		onRetry?()
 	}
 }
+
