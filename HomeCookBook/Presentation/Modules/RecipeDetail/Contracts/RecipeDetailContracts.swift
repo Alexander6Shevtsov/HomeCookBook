@@ -9,9 +9,6 @@ import UIKit
 
 protocol RecipeDetailViewInput: AnyObject {
 	func display(title: String, imageURL: URL?, instructions: String)
-	
-	func showLoading(_ isLoading: Bool)
-	
 	func showError(message: String)
 }
 

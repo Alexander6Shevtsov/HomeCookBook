@@ -27,14 +27,6 @@ final class RecipeDetailViewController: UIViewController {
 	private let imageLoader = ImageLoader.shared
 	private var imageTask: Task<Void, Never>?
 	
-	private lazy var activityIndicator: UIActivityIndicatorView = {
-		let activity = UIActivityIndicatorView(style: .medium)
-		activity.hidesWhenStopped = true
-		return activity
-	}()
-	private lazy var activityItem = UIBarButtonItem(customView: activityIndicator)
-	private var spinnerDelayTask: Task<Void, Never>?
-	
 	private var favoriteBarButtonItem: UIBarButtonItem!
 	private var isFavorite: Bool = false
 	private var favoritesObserver: NSObjectProtocol?
@@ -96,7 +88,9 @@ final class RecipeDetailViewController: UIViewController {
 		imageView.backgroundColor = .secondarySystemBackground
 		imageView.image = UIImage(systemName: "photo")
 		imageView.tintColor = .tertiaryLabel
-		imageView.heightAnchor.constraint(equalToConstant: Constants.imageHeight).isActive = true
+		imageView.heightAnchor.constraint(
+			equalToConstant: Constants.imageHeight
+		).isActive = true
 		
 		if let initialImage {
 			imageView.image = initialImage
@@ -132,8 +126,6 @@ final class RecipeDetailViewController: UIViewController {
 			
 			contentStack.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor)
 		])
-		
-		activityIndicator.stopAnimating()
 	}
 	
 	private func setupFavoriteButton() {
@@ -144,7 +136,7 @@ final class RecipeDetailViewController: UIViewController {
 			action: #selector(didTapFavorite)
 		)
 		favoriteBarButtonItem.tintColor = .systemYellow
-		navigationItem.rightBarButtonItems = [favoriteBarButtonItem, activityItem]
+		navigationItem.rightBarButtonItem = favoriteBarButtonItem
 		
 		Task { [weak self] in
 			guard let self else { return }
@@ -238,33 +230,27 @@ extension RecipeDetailViewController: RecipeDetailViewInput {
 				guard let self else { return }
 				if let image = try? await self.imageLoader.image(from: url) {
 					await MainActor.run {
-						UIView.transition(with: self.imageView, duration: 0.25, options: .transitionCrossDissolve, animations: {
-							self.imageView.image = image
-							self.imageView.tintColor = nil
-						}, completion: nil)
+						UIView.transition(
+							with: self.imageView,
+							duration: 0.25,
+							options: .transitionCrossDissolve,
+							animations: {
+								self.imageView.image = image
+								self.imageView.tintColor = nil
+							},
+							completion: nil)
 					}
 				}
 			}
 		}
 	}
 	
-	func showLoading(_ isLoading: Bool) {
-		if isLoading {
-			spinnerDelayTask?.cancel()
-			spinnerDelayTask = Task { [weak self] in
-				try? await Task.sleep(nanoseconds: 200_000_000)
-				guard let self, !Task.isCancelled else { return }
-				await MainActor.run { self.activityIndicator.startAnimating() }
-			}
-		} else {
-			spinnerDelayTask?.cancel()
-			spinnerDelayTask = nil
-			activityIndicator.stopAnimating()
-		}
-	}
-	
 	func showError(message: String) {
-		let alert = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
+		let alert = UIAlertController(
+			title: "Error",
+			message: message,
+			preferredStyle: .alert
+		)
 		alert.addAction(UIAlertAction(title: "OK", style: .default))
 		present(alert, animated: true)
 	}

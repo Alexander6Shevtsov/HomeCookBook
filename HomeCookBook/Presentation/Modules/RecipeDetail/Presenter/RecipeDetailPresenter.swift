@@ -29,19 +29,16 @@ final class RecipeDetailPresenter {
 
 extension RecipeDetailPresenter: RecipeDetailViewOutput {
 	func viewDidLoad() {
-		view?.showLoading(true)
 		interactor.loadDetails()
 	}
 }
 
 extension RecipeDetailPresenter: RecipeDetailInteractorOutput {
 	func didLoad(details: RecipeDetailEntity) {
-		view?.showLoading(false)
 		view?.display(title: details.title, imageURL: details.imageURL, instructions: details.instructions)
 	}
 	
 	func didFailToLoad(error: Error) {
-		view?.showLoading(false)
 		view?.showError(message: error.localizedDescription)
 	}
 }
