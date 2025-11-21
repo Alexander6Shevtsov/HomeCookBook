@@ -10,7 +10,7 @@ import UIKit
 final class FavoritesListViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
 	
 	private let favoritesStore: FavoritesStore
-	var onSelect: ((String) -> Void)?
+	var onSelect: ((String, String?) -> Void)?
 	
 	private var items: [FavoriteItem] = []
 	private let tableView = UITableView(frame: .zero, style: .insetGrouped)
@@ -99,7 +99,31 @@ final class FavoritesListViewController: UIViewController, UITableViewDataSource
 	func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
 		tableView.deselectRow(at: indexPath, animated: true)
 		let item = items[indexPath.row]
-		onSelect?(item.id)
+		onSelect?(item.id, item.title)
+	}
+	
+	func tableView(
+		_ tableView: UITableView,
+		trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath
+	) -> UISwipeActionsConfiguration? {
+		let delete = UIContextualAction(style: .destructive, title: "Delete") { [weak self] _, _, completion in
+			guard let self else { completion(false); return }
+			let id = self.items[indexPath.row].id
+			Task { [weak self] in
+				guard let self else { return }
+				do {
+					try await self.favoritesStore.remove(id: id)
+					await MainActor.run {
+						self.items.remove(at: indexPath.row)
+						tableView.deleteRows(at: [indexPath], with: .automatic)
+						completion(true)
+					}
+				} catch {
+					await MainActor.run { completion(false) }
+				}
+			}
+		}
+		return UISwipeActionsConfiguration(actions: [delete])
 	}
 }
 

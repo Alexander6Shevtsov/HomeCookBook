@@ -30,9 +30,10 @@ final class RecipeListRouter: RecipeListRouterInput {
 	
 	func routeToFavorites() {
 		let favoritesVC = FavoritesListViewController(favoritesStore: favoritesStore)
-		favoritesVC.onSelect = { [weak self] mealId in
-			self?.routeToDetails(mealId: mealId, initialTitle: nil)
+		favoritesVC.onSelect = { [weak self] mealId, title in
+			self?.routeToDetails(mealId: mealId, initialTitle: title)
 		}
 		viewController?.navigationController?.pushViewController(favoritesVC, animated: true)
 	}
 }
+
