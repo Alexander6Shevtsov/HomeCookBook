@@ -141,7 +141,10 @@ final class RecipeListViewController: UIViewController {
 		collectionView.dataSource = self
 		collectionView.delegate = self
 		collectionView.prefetchDataSource = self
-		collectionView.register(RecipeCardCell.self, forCellWithReuseIdentifier: RecipeCardCell.reuseId)
+		collectionView.register(
+			RecipeCardCell.self,
+			forCellWithReuseIdentifier: RecipeCardCell.reuseId
+		)
 		
 		stateView.translatesAutoresizingMaskIntoConstraints = false
 		stateView.isHidden = true
@@ -195,13 +198,23 @@ final class RecipeListViewController: UIViewController {
 	}
 	
 	private func makeInitialFilterMenu() -> UIMenu {
-		let allAction = UIAction(title: TextConstants.allTitle, state: .on) { [weak self] _ in
+		let allAction = UIAction(
+			title: TextConstants.allTitle,
+			state: .on
+		) { [weak self] _ in
 			self?.filterButton.title = nil
 			self?.setFilterTitle(nil)
 			self?.output?.selectCategory(nil)
 		}
-		let loading = UIAction(title: TextConstants.loadingTitle, attributes: [.disabled]) { _ in }
-		return UIMenu(title: TextConstants.categoryMenuTitle, options: .singleSelection, children: [allAction, loading])
+		let loading = UIAction(
+			title: TextConstants.loadingTitle,
+			attributes: [.disabled]
+		) { _ in }
+		return UIMenu(
+			title: TextConstants.categoryMenuTitle,
+			options: .singleSelection,
+			children: [allAction, loading]
+		)
 	}
 	
 	@objc private func didTapFavorites() {
@@ -214,10 +227,10 @@ final class RecipeListViewController: UIViewController {
 		Task { [weak self] in
 			guard let self else { return }
 			do {
-				let items = try await favoritesStore.fetchAll()
-				let ids = Set(items.map(\.id))
+				let favoriteItems = try await favoritesStore.fetchAll()
+				let favoriteIdentifiers = Set(favoriteItems.map(\.id))
 				await MainActor.run {
-					self.favoriteIDs = ids
+					self.favoriteIDs = favoriteIdentifiers
 					self.collectionView.reloadData()
 				}
 			} catch {
@@ -228,25 +241,27 @@ final class RecipeListViewController: UIViewController {
 			forName: .favoritesDidChange,
 			object: nil,
 			queue: .main
-		) { [weak self] note in
+		) { [weak self] notification in
 			guard let self else { return }
 			guard
-				let id = note.userInfo?[FavoritesNotification.idKey] as? String,
-				let isFav = note.userInfo?[FavoritesNotification.isFavoriteKey] as? Bool
+				let favoriteId = notification.userInfo?[FavoritesNotification.idKey] as? String,
+				let isFavorite = notification.userInfo?[FavoritesNotification.isFavoriteKey] as? Bool
 			else { return }
 			
-			if self.recentlyChangedFavoriteIDs.contains(id) { return }
+			if self.recentlyChangedFavoriteIDs.contains(favoriteId) { return }
 			
-			if isFav {
-				self.favoriteIDs.insert(id)
+			if isFavorite {
+				self.favoriteIDs.insert(favoriteId)
 			} else {
-				self.favoriteIDs.remove(id)
+				self.favoriteIDs.remove(favoriteId)
 			}
 			
-			if let idx = self.items.firstIndex(where: { $0.id == id }) {
-				let indexPath = IndexPath(item: idx, section: 0)
-				if let cell = self.collectionView.cellForItem(at: indexPath) as? RecipeCardCell {
-					cell.setFavorite(isFav)
+			if let favoriteIndex = self.items.firstIndex(where: { $0.id == favoriteId }) {
+				let indexPath = IndexPath(item: favoriteIndex, section: 0)
+				if let cell = self.collectionView.cellForItem(
+					at: indexPath
+				) as? RecipeCardCell {
+					cell.setFavorite(isFavorite)
 				}
 			}
 		}
@@ -254,32 +269,44 @@ final class RecipeListViewController: UIViewController {
 	
 	private func markRecentlyChanged(_ id: String) {
 		recentlyChangedFavoriteIDs.insert(id)
-		DispatchQueue.main.asyncAfter(deadline: .now() + BehaviorConstants.recentlyChangedWindow) { [weak self] in
+		DispatchQueue.main.asyncAfter(
+			deadline: .now() + BehaviorConstants.recentlyChangedWindow
+		) { [weak self] in
 			self?.recentlyChangedFavoriteIDs.remove(id)
 		}
 	}
 	
 	private func columns(for width: CGFloat) -> Int {
-		if traitCollection.horizontalSizeClass == .regular && width > BehaviorConstants.regularWidthThreshold { return 3 }
+		if traitCollection.horizontalSizeClass == .regular,
+		   width > BehaviorConstants.regularWidthThreshold {
+			return 3
+		}
 		return 2
 	}
 	
 	private func itemSize(for width: CGFloat) -> CGSize {
 		let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout
 		let sectionInsets = layout?.sectionInset ?? .zero
-		let inter = layout?.minimumInteritemSpacing ?? LayoutConstants.interItemSpacing
+		let interitemSpacing = layout?.minimumInteritemSpacing ?? LayoutConstants.interItemSpacing
 		
-		let cols = CGFloat(columns(for: width))
-		let totalHSpacing = sectionInsets.left + sectionInsets.right + inter * max(0, cols - 1)
-		let itemWidth = max(0, (width - totalHSpacing) / cols)
+		let columnsCount = CGFloat(columns(for: width))
+		let totalHorizontalSpacing =
+		sectionInsets.left
+		+ sectionInsets.right
+		+ interitemSpacing * max(0, columnsCount - 1)
 		
+		let itemWidth = max(0, (width - totalHorizontalSpacing) / columnsCount)
 		let imageHeight = itemWidth * LayoutConstants.imageAspectRatio
 		
 		let titleLineHeight = UIFont.preferredFont(forTextStyle: .headline).lineHeight
 		let subtitleLineHeight = UIFont.preferredFont(forTextStyle: .subheadline).lineHeight
 		let titleHeight = titleLineHeight * CGFloat(LayoutConstants.titleLines)
 		let subtitleHeight = subtitleLineHeight * CGFloat(LayoutConstants.subtitleLines)
-		let verticalTextSpacing = LayoutConstants.contentPadding + LayoutConstants.labelsSpacing + LayoutConstants.contentPadding
+		let verticalTextSpacing =
+			LayoutConstants.contentPadding
+			+ LayoutConstants.labelsSpacing
+			+ LayoutConstants.contentPadding
+		
 		let itemHeight = imageHeight + titleHeight + subtitleHeight + verticalTextSpacing
 		return CGSize(width: floor(itemWidth), height: ceil(itemHeight))
 	}
@@ -313,7 +340,10 @@ final class RecipeListViewController: UIViewController {
 		stateView.isHidden = true
 	}
 	
-	override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+	override func viewWillTransition(
+		to size: CGSize,
+		with coordinator: UIViewControllerTransitionCoordinator
+	) {
 		super.viewWillTransition(to: size, with: coordinator)
 		coordinator.animate(alongsideTransition: { [weak self] _ in
 			guard let self = self else { return }
@@ -355,9 +385,13 @@ extension RecipeListViewController: UICollectionViewDataSource {
 			return dequeued
 		}
 		
-		let vm = items[indexPath.item]
-		let isFavorite = favoriteIDs.contains(vm.id)
-		cell.configure(title: vm.title, subtitle: vm.subtitle, isFavorite: isFavorite)
+		let itemViewModel = items[indexPath.item]
+		let isFavorite = favoriteIDs.contains(itemViewModel.id)
+		cell.configure(
+			title: itemViewModel.title,
+			subtitle: itemViewModel.subtitle,
+			isFavorite: isFavorite
+		)
 		
 		imageTasks[indexPath]?.cancel()
 		imageTasks[indexPath] = nil
@@ -365,14 +399,14 @@ extension RecipeListViewController: UICollectionViewDataSource {
 		cell.onToggleFavorite = { [weak self, weak collectionView] in
 			guard let self, let favoritesStore = self.favoritesStore else { return }
 			let favoriteItem = FavoriteItem(
-				id: vm.id,
-				title: vm.title,
-				subtitle: vm.subtitle,
-				thumbnailURL: vm.thumbnailURL,
+				id: itemViewModel.id,
+				title: itemViewModel.title,
+				subtitle: itemViewModel.subtitle,
+				thumbnailURL: itemViewModel.thumbnailURL,
 				dateAdded: Date()
 			)
 			
-			self.markRecentlyChanged(vm.id)
+			self.markRecentlyChanged(itemViewModel.id)
 			
 			Task { [weak self, weak collectionView] in
 				guard let self else { return }
@@ -380,24 +414,26 @@ extension RecipeListViewController: UICollectionViewDataSource {
 					let nowFavorite = try await favoritesStore.toggle(item: favoriteItem)
 					await MainActor.run {
 						if nowFavorite {
-							self.favoriteIDs.insert(vm.id)
+							self.favoriteIDs.insert(itemViewModel.id)
 						} else {
-							self.favoriteIDs.remove(vm.id)
+							self.favoriteIDs.remove(itemViewModel.id)
 						}
 						if let collectionView,
-						   let visibleCell = collectionView.cellForItem(at: indexPath) as? RecipeCardCell {
+						   let visibleCell = collectionView.cellForItem(
+							at: indexPath
+						   ) as? RecipeCardCell {
 							visibleCell.setFavorite(nowFavorite)
 						}
 					}
 				} catch {
 					_ = await MainActor.run { [weak self] in
-						self?.recentlyChangedFavoriteIDs.remove(vm.id)
+						self?.recentlyChangedFavoriteIDs.remove(itemViewModel.id)
 					}
 				}
 			}
 		}
 		
-		guard let url = vm.thumbnailURL else {
+		guard let url = itemViewModel.thumbnailURL else {
 			cell.setPlaceholder()
 			return cell
 		}
@@ -408,7 +444,7 @@ extension RecipeListViewController: UICollectionViewDataSource {
 		}
 		
 		cell.setPlaceholder()
-		let expectedId = vm.id
+		let expectedId = itemViewModel.id
 		let task = Task { [weak self, weak collectionView] in
 			guard let self else { return }
 			if let image = try? await self.imageLoader.image(from: url) {
@@ -436,9 +472,11 @@ extension RecipeListViewController: UICollectionViewDelegate {
 		_ collectionView: UICollectionView,
 		didSelectItemAt indexPath: IndexPath
 	) {
-		let vm = items[indexPath.item]
-		let preview = vm.thumbnailURL.flatMap { imageLoader.cachedImage(for: $0) }
-		output?.didSelectItem(at: indexPath.item, previewImage: preview)
+		let itemViewModel = items[indexPath.item]
+		let previewImage = itemViewModel.thumbnailURL.flatMap {
+			imageLoader.cachedImage(for: $0)
+		}
+		output?.didSelectItem(at: indexPath.item, previewImage: previewImage)
 		collectionView.deselectItem(at: indexPath, animated: true)
 	}
 	
@@ -547,7 +585,10 @@ extension RecipeListViewController: RecipeListViewInput {
 	func showCategoryMenu(categories: [String], selected: String?) {
 		setFilterTitle(selected)
 		
-		let allAction = UIAction(title: TextConstants.allTitle, state: selected == nil ? .on : .off) { [weak self] _ in
+		let allAction = UIAction(
+			title: TextConstants.allTitle,
+			state: selected == nil ? .on : .off
+		) { [weak self] _ in
 			self?.filterButton.title = nil
 			self?.setFilterTitle(nil)
 			self?.output?.selectCategory(nil)
@@ -562,24 +603,30 @@ extension RecipeListViewController: RecipeListViewInput {
 			}
 		}
 		
-		let menu = UIMenu(title: TextConstants.categoryMenuTitle, options: .singleSelection, children: [allAction] + categoryActions)
+		let menu = UIMenu(
+			title: TextConstants.categoryMenuTitle,
+			options: .singleSelection,
+			children: [allAction] + categoryActions
+		)
 		filterButton.menu = menu
 	}
 }
 
 extension RecipeListViewController: UISearchResultsUpdating {
 	func updateSearchResults(for searchController: UISearchController) {
-		let text = searchController.searchBar.text ?? ""
+		let searchQuery = searchController.searchBar.text ?? ""
 		searchTask?.cancel()
-		if text.isEmpty {
+		if searchQuery.isEmpty {
 			output?.search(query: "")
 			return
 		}
-		let nanos = UInt64(BehaviorConstants.debounceSeconds * 1_000_000_000)
+		let debounceDelayNanoseconds = UInt64(
+			BehaviorConstants.debounceSeconds * 1_000_000_000
+		)
 		searchTask = Task { [weak self] in
-			try? await Task.sleep(nanoseconds: nanos)
+			try? await Task.sleep(nanoseconds: debounceDelayNanoseconds)
 			guard !Task.isCancelled else { return }
-			self?.output?.search(query: text)
+			self?.output?.search(query: searchQuery)
 		}
 	}
 }
