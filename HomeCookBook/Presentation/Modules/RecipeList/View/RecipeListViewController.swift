@@ -185,49 +185,56 @@ extension RecipeListViewController: UICollectionViewDataSource {
 	}
 	
 	func collectionView(
-		_ collectionView: UICollectionView,
-		cellForItemAt indexPath: IndexPath
-	) -> UICollectionViewCell {
-		let cell = collectionView.dequeueReusableCell(
-			withReuseIdentifier: RecipeCardCell.reuseId,
-			for: indexPath
-		) as! RecipeCardCell
-		
-		let vm = items[indexPath.item]
-		cell.configure(title: vm.title, subtitle: vm.subtitle)
-		
-		imageTasks[indexPath]?.cancel()
-		imageTasks[indexPath] = nil
-		
-		guard let url = vm.thumbnailURL else {
-			cell.setPlaceholder()
-			return cell
-		}
-		
-		if let cached = imageLoader.cachedImage(for: url) {
-			cell.setImage(cached)
-			return cell
-		}
-		
-		cell.setPlaceholder()
-		let expectedId = vm.id
-		let task = Task { [weak self, weak collectionView] in
-			guard let self else { return }
-			if let image = try? await self.imageLoader.image(from: url) {
-				await MainActor.run {
-					guard
-						let collectionView,
-						let visibleCell = collectionView.cellForItem(at: indexPath) as? RecipeCardCell
-					else { return }
-					guard indexPath.item < self.items.count, self.items[indexPath.item].id == expectedId else { return }
-					visibleCell.setImage(image)
-				}
-			}
-		}
-		imageTasks[indexPath] = task
-		
-		return cell
-	}
+    _ collectionView: UICollectionView,
+    cellForItemAt indexPath: IndexPath
+) -> UICollectionViewCell {
+    let dequeued = collectionView.dequeueReusableCell(
+        withReuseIdentifier: RecipeCardCell.reuseId,
+        for: indexPath
+    )
+    guard let cell = dequeued as? RecipeCardCell else {
+        assertionFailure("Unexpected cell type for reuse id: \(RecipeCardCell.reuseId)")
+        return dequeued
+    }
+    
+    let vm = items[indexPath.item]
+    cell.configure(title: vm.title, subtitle: vm.subtitle)
+    
+    imageTasks[indexPath]?.cancel()
+    imageTasks[indexPath] = nil
+    
+    guard let url = vm.thumbnailURL else {
+        cell.setPlaceholder()
+        return cell
+    }
+    
+    if let cached = imageLoader.cachedImage(for: url) {
+        cell.setImage(cached)
+        return cell
+    }
+    
+    cell.setPlaceholder()
+    let expectedId = vm.id
+    let task = Task { [weak self, weak collectionView] in
+        guard let self else { return }
+        if let image = try? await self.imageLoader.image(from: url) {
+            await MainActor.run {
+                guard
+                    let collectionView,
+					let visibleCell = collectionView.cellForItem(
+						at: indexPath
+					) as? RecipeCardCell
+                else { return }
+				guard indexPath.item < self.items.count, self
+					.items[indexPath.item].id == expectedId else { return }
+                visibleCell.setImage(image)
+            }
+        }
+    }
+    imageTasks[indexPath] = task
+    
+    return cell
+}
 }
 
 extension RecipeListViewController: UICollectionViewDelegate {
@@ -270,7 +277,10 @@ extension RecipeListViewController: UICollectionViewDelegateFlowLayout {
 }
 
 extension RecipeListViewController: UICollectionViewDataSourcePrefetching {
-	func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
+	func collectionView(
+		_ collectionView: UICollectionView,
+		prefetchItemsAt indexPaths: [IndexPath]
+	) {
 		let urls = indexPaths.compactMap { indexPath -> URL? in
 			guard indexPath.item < items.count else { return nil }
 			return items[indexPath.item].thumbnailURL
@@ -285,7 +295,10 @@ extension RecipeListViewController: UICollectionViewDataSourcePrefetching {
 		}
 	}
 	
-	func collectionView(_ collectionView: UICollectionView, cancelPrefetchingForItemsAt indexPaths: [IndexPath]) {
+	func collectionView(
+		_ collectionView: UICollectionView,
+		cancelPrefetchingForItemsAt indexPaths: [IndexPath]
+	) {
 		let urls = indexPaths.compactMap { indexPath -> URL? in
 			guard indexPath.item < items.count else { return nil }
 			return items[indexPath.item].thumbnailURL
