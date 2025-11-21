@@ -29,8 +29,8 @@ final class RecipeListPresenter {
 		case category(String)
 	}
 	private var lastAction: LastAction = .initial
-	
 	private var selectedCategory: String?
+	private var initialRandomItems: [RecipeListItemViewModel]?
 	
 	init(
 		view: RecipeListViewInput,
@@ -65,6 +65,7 @@ final class RecipeListPresenter {
 extension RecipeListPresenter: RecipeListViewOutput {
 	func viewDidLoad() {
 		lastAction = .initial
+		isLoadingMore = false
 		hasMoreServerData = true
 		interactor.loadInitial()
 	}
@@ -82,6 +83,15 @@ extension RecipeListPresenter: RecipeListViewOutput {
 	
 	func refresh() {
 		selectedCategory = nil
+		isLoadingMore = false
+		if let initialRandomItems {
+			lastAction = .initial
+			hasMoreServerData = true
+			resetPagination(with: initialRandomItems)
+			view?.display(items: viewModels)
+			interactor.loadInitial()
+			return
+		}
 		lastAction = .refresh
 		hasMoreServerData = true
 		interactor.refresh()
@@ -95,6 +105,15 @@ extension RecipeListPresenter: RecipeListViewOutput {
 		searchTask = nil
 		
 		guard !trimmed.isEmpty else {
+			isLoadingMore = false
+			if let initialRandomItems {
+				lastAction = .initial
+				hasMoreServerData = true
+				resetPagination(with: initialRandomItems)
+				view?.display(items: viewModels)
+				interactor.loadInitial()
+				return
+			}
 			lastAction = .initial
 			hasMoreServerData = true
 			interactor.loadInitial()
@@ -105,6 +124,7 @@ extension RecipeListPresenter: RecipeListViewOutput {
 			try? await Task.sleep(nanoseconds: 350_000_000)
 			guard let self, !Task.isCancelled else { return }
 			self.lastAction = .search(trimmed)
+			self.isLoadingMore = false
 			self.hasMoreServerData = false
 			self.interactor.search(query: trimmed)
 		}
@@ -113,15 +133,33 @@ extension RecipeListPresenter: RecipeListViewOutput {
 	func retry() {
 		switch lastAction {
 		case .initial:
-			hasMoreServerData = true
-			interactor.loadInitial()
+			isLoadingMore = false
+			if let initialRandomItems {
+				hasMoreServerData = true
+				resetPagination(with: initialRandomItems)
+				view?.display(items: viewModels)
+				interactor.loadInitial()
+			} else {
+				hasMoreServerData = true
+				interactor.loadInitial()
+			}
 		case .refresh:
-			hasMoreServerData = true
-			interactor.refresh()
+			isLoadingMore = false
+			if let initialRandomItems {
+				hasMoreServerData = true
+				resetPagination(with: initialRandomItems)
+				view?.display(items: viewModels)
+				interactor.loadInitial()
+			} else {
+				hasMoreServerData = true
+				interactor.refresh()
+			}
 		case .search(let q):
+			isLoadingMore = false
 			hasMoreServerData = false
 			interactor.search(query: q)
 		case .category(let c):
+			isLoadingMore = false
 			hasMoreServerData = false
 			interactor.searchCategory(c)
 		}
@@ -166,14 +204,22 @@ extension RecipeListPresenter: RecipeListViewOutput {
 	
 	func selectCategory(_ name: String?) {
 		selectedCategory = name
+		isLoadingMore = false
 		if let name {
 			lastAction = .category(name)
 			hasMoreServerData = false
 			interactor.searchCategory(name)
 		} else {
 			lastAction = .initial
-			hasMoreServerData = true
-			interactor.loadInitial()
+			if let initialRandomItems {
+				hasMoreServerData = true
+				resetPagination(with: initialRandomItems)
+				view?.display(items: viewModels)
+				interactor.loadInitial()
+			} else {
+				hasMoreServerData = true
+				interactor.loadInitial()
+			}
 		}
 	}
 }
@@ -181,16 +227,31 @@ extension RecipeListPresenter: RecipeListViewOutput {
 extension RecipeListPresenter: RecipeListInteractorOutput {
 	func didLoad(items: [RecipeListItemEntity]) {
 		let mappedViewModels = items.map(map(entity:))
-		resetPagination(with: mappedViewModels)
 		
 		switch lastAction {
-		case .initial, .refresh:
+		case .initial:
+			if initialRandomItems == nil {
+				initialRandomItems = mappedViewModels.shuffled()
+			}
+			if let initialRandomItems {
+				resetPagination(with: initialRandomItems)
+				hasMoreServerData = true
+			} else {
+				resetPagination(with: mappedViewModels)
+				hasMoreServerData = true
+			}
+			view?.display(items: viewModels)
+			
+		case .refresh:
+			resetPagination(with: mappedViewModels)
 			hasMoreServerData = true
+			view?.display(items: viewModels)
+			
 		case .search, .category:
+			resetPagination(with: mappedViewModels)
 			hasMoreServerData = false
+			view?.display(items: viewModels)
 		}
-		
-		view?.display(items: viewModels)
 	}
 	
 	func didLoadMore(items: [RecipeListItemEntity]) {
@@ -226,4 +287,3 @@ extension RecipeListPresenter: RecipeListInteractorOutput {
 		view?.showCategoryMenu(categories: categories, selected: selectedCategory)
 	}
 }
-

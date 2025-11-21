@@ -121,3 +121,4 @@ final class RecipeListInteractor: RecipeListInteractorInput {
 		}
 	}
 }
+

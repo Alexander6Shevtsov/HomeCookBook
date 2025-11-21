@@ -14,6 +14,8 @@ protocol MealsService {
 	func fetch(category: String) async throws -> [RecipeListItemEntity]
 	func fetchDetails(id: String) async throws -> RecipeDetailEntity
 	func fetchCategories() async throws -> [String]
+	func fetchRandomSelection() async throws -> [RecipeListItemEntity]
+	func fetchRandom() async throws -> RecipeListItemEntity?
 }
 
 final class TheMealDBService: MealsService {
@@ -102,6 +104,36 @@ final class TheMealDBService: MealsService {
 		let items = response.meals ?? []
 		return items.map { $0.strCategory }
 	}
+		
+	func fetchRandomSelection() async throws -> [RecipeListItemEntity] {
+		guard let url = URL(string: "https://www.themealdb.com/api/json/v1/1/randomselection.php") else {
+			throw URLError(.badURL)
+		}
+		let response: MealSearchResponseDTO = try await client.get(url)
+		let meals = response.meals ?? []
+		return meals.map { dto in
+			RecipeListItemEntity(
+				id: dto.idMeal,
+				name: dto.strMeal,
+				category: dto.strCategory,
+				thumbnailURL: dto.strMealThumb.flatMap(URL.init(string:))
+			)
+		}
+	}
+	
+	func fetchRandom() async throws -> RecipeListItemEntity? {
+		guard let url = URL(string: "https://www.themealdb.com/api/json/v1/1/random.php") else {
+			throw URLError(.badURL)
+		}
+		let response: MealSearchResponseDTO = try await client.get(url)
+		guard let dto = response.meals?.first else { return nil }
+		return RecipeListItemEntity(
+			id: dto.idMeal,
+			name: dto.strMeal,
+			category: dto.strCategory,
+			thumbnailURL: dto.strMealThumb.flatMap(URL.init(string:))
+		)
+	}
 }
 
 private struct MealFilterResponseDTO: Decodable {
@@ -121,4 +153,3 @@ private struct CategoryListResponseDTO: Decodable {
 private struct CategoryItemDTO: Decodable {
 	let strCategory: String
 }
-
