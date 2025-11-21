@@ -38,7 +38,7 @@ final class RecipeListViewController: UIViewController {
 		
 		static let title = "Recipes"
 		
-		static let prefetchThreshold = 6
+		static let prefetchThreshold = 12
 	}
 	
 	init() {
@@ -162,9 +162,25 @@ final class RecipeListViewController: UIViewController {
 		stateView.isHidden = true
 	}
 	
-	override func viewWillLayoutSubviews() {
-		super.viewWillLayoutSubviews()
-		(collectionView.collectionViewLayout as? UICollectionViewFlowLayout)?.invalidateLayout()
+	override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+		super.viewWillTransition(to: size, with: coordinator)
+		coordinator.animate(alongsideTransition: { [weak self] _ in
+			guard let self = self else { return }
+			(self.collectionView.collectionViewLayout as? UICollectionViewFlowLayout)?.invalidateLayout()
+		}, completion: nil)
+	}
+	
+	private func preheatInitialImages() {
+		guard !items.isEmpty else { return }
+		let width = collectionView.bounds.width
+		let size = itemSize(for: width)
+		let cols = columns(for: width)
+		let rowsOnScreen = max(1, Int(ceil(collectionView.bounds.height / size.height)))
+		let preheatRows = rowsOnScreen + 2
+		let count = min(items.count, preheatRows * cols)
+		let urls = (0..<count).compactMap { items[$0].thumbnailURL }
+		guard !urls.isEmpty else { return }
+		Task { await imageLoader.prefetch(urls: urls) }
 	}
 }
 
@@ -266,15 +282,47 @@ extension RecipeListViewController: UICollectionViewDataSourcePrefetching {
 			output?.loadMore()
 		}
 	}
+	
+	func collectionView(_ collectionView: UICollectionView, cancelPrefetchingForItemsAt indexPaths: [IndexPath]) {
+		let urls = indexPaths.compactMap { indexPath -> URL? in
+			guard indexPath.item < items.count else { return nil }
+			return items[indexPath.item].thumbnailURL
+		}
+		guard !urls.isEmpty else { return }
+		Task {
+			for url in urls {
+				await imageLoader.cancelPrefetch(url: url)
+			}
+		}
+	}
 }
 
 extension RecipeListViewController: RecipeListViewInput {
-	func display(items: [RecipeListItemViewModel]) {
-		cancelAllImageTasks()
-		self.items = items
-		collectionView.reloadData()
+	func display(items newItems: [RecipeListItemViewModel]) {
+		let oldItems = self.items
+		let oldCount = oldItems.count
+		let newCount = newItems.count
 		
-		if items.isEmpty {
+		let isAppend =
+		oldCount > 0 &&
+		newCount >= oldCount &&
+		zip(oldItems, newItems.prefix(oldCount)).allSatisfy { $0.id == $1.id }
+		
+		if isAppend {
+			self.items = newItems
+			let insertRange = oldCount..<newCount
+			let indexPaths = insertRange.map { IndexPath(item: $0, section: 0) }
+			collectionView.performBatchUpdates({
+				collectionView.insertItems(at: indexPaths)
+			}, completion: nil)
+		} else {
+			cancelAllImageTasks()
+			self.items = newItems
+			collectionView.reloadData()
+			preheatInitialImages()
+		}
+		
+		if newItems.isEmpty {
 			showEmptyState()
 		} else {
 			hideState()
