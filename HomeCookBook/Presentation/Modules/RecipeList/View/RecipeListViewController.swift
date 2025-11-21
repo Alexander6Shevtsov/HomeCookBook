@@ -148,6 +148,12 @@ final class RecipeListViewController: UIViewController {
 			label.adjustsFontForContentSizeCategory = true
 			label.adjustsFontSizeToFitWidth = true
 			label.minimumScaleFactor = 0.8
+			label.isUserInteractionEnabled = true
+			let tap = UITapGestureRecognizer(target: self, action: #selector(didTapTitle))
+			label.addGestureRecognizer(tap)
+			label.accessibilityTraits.insert(.button)
+			label.accessibilityHint = "Прокрутить к началу"
+			
 			navigationItem.titleView = label
 			return
 		}
@@ -160,7 +166,19 @@ final class RecipeListViewController: UIViewController {
 		label.adjustsFontForContentSizeCategory = true
 		label.adjustsFontSizeToFitWidth = true
 		label.minimumScaleFactor = 0.8
+		label.isUserInteractionEnabled = true
+		let tap = UITapGestureRecognizer(target: self, action: #selector(didTapTitle))
+		label.addGestureRecognizer(tap)
+		label.accessibilityTraits.insert(.button)
+		label.accessibilityHint = "Прокрутить к началу"
+		
 		navigationItem.titleView = label
+	}
+	
+	@objc private func didTapTitle() {
+		view.endEditing(true)
+		let topY = -collectionView.adjustedContentInset.top
+		collectionView.setContentOffset(CGPoint(x: 0, y: topY), animated: true)
 	}
 	
 	private func makeInitialFilterMenu() -> UIMenu {
@@ -619,4 +637,3 @@ private final class StateOverlayView: UIView {
 		onRetry?()
 	}
 }
-
