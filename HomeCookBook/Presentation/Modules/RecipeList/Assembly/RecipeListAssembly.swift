@@ -14,11 +14,18 @@ enum RecipeListAssembly {
 		let networkClient = URLSessionNetworkClient()
 		let service = TheMealDBService(client: networkClient)
 		
-		let router = RecipeListRouter(viewController: view, service: service)
+		let favoritesStore: FavoritesStore = FavoritesStoreImpl()
+		
+		let router = RecipeListRouter(
+			viewController: view,
+			service: service,
+			favoritesStore: favoritesStore
+		)
 		let interactor = RecipeListInteractor(output: nil, service: service)
 		
 		let presenter = RecipeListPresenter(view: view, interactor: interactor, router: router)
 		
+		view.favoritesStore = favoritesStore
 		view.output = presenter
 		interactor.setOutput(presenter)
 		

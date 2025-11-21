@@ -11,6 +11,10 @@ final class RecipeListViewController: UIViewController {
 	
 	var output: RecipeListViewOutput?
 	
+	var favoritesStore: FavoritesStore = FavoritesStoreImpl()
+	private var favoriteIDs: Set<String> = []
+	private var favoritesObserver: NSObjectProtocol?
+	
 	private let collectionView: UICollectionView
 	private let searchController = UISearchController(searchResultsController: nil)
 	
@@ -56,9 +60,16 @@ final class RecipeListViewController: UIViewController {
 	
 	required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 	
+	deinit {
+		if let observer = favoritesObserver {
+			NotificationCenter.default.removeObserver(observer)
+		}
+	}
+	
 	override func viewDidLoad() {
 		super.viewDidLoad()
 		setupUI()
+		setupFavorites()
 		output?.viewDidLoad()
 	}
 	
@@ -66,6 +77,15 @@ final class RecipeListViewController: UIViewController {
 		view.backgroundColor = .systemBackground
 		title = Constants.title
 		navigationItem.largeTitleDisplayMode = .always
+		
+		let favoritesButton = UIBarButtonItem(
+			image: UIImage(systemName: "star"),
+			style: .plain,
+			target: self,
+			action: #selector(didTapFavorites)
+		)
+		favoritesButton.tintColor = .systemYellow
+		navigationItem.rightBarButtonItem = favoritesButton
 		
 		searchController.searchResultsUpdater = self
 		searchController.obscuresBackgroundDuringPresentation = false
@@ -79,7 +99,10 @@ final class RecipeListViewController: UIViewController {
 		collectionView.dataSource = self
 		collectionView.delegate = self
 		collectionView.prefetchDataSource = self
-		collectionView.register(RecipeCardCell.self, forCellWithReuseIdentifier: RecipeCardCell.reuseId)
+		collectionView.register(
+			RecipeCardCell.self,
+			forCellWithReuseIdentifier: RecipeCardCell.reuseId
+		)
 		
 		stateView.translatesAutoresizingMaskIntoConstraints = false
 		stateView.isHidden = true
@@ -101,6 +124,44 @@ final class RecipeListViewController: UIViewController {
 			stateView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
 			stateView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
 		])
+	}
+	
+	@objc private func didTapFavorites() {
+		output?.openFavorites()
+	}
+	
+	private func setupFavorites() {
+		Task { [weak self] in
+			guard let self else { return }
+			do {
+				let items = try await favoritesStore.fetchAll()
+				let ids = Set(items.map(\.id))
+				await MainActor.run {
+					self.favoriteIDs = ids
+					self.collectionView.reloadData()
+				}
+			} catch {
+			}
+		}
+		
+		favoritesObserver = NotificationCenter.default.addObserver(
+			forName: .favoritesDidChange,
+			object: nil,
+			queue: .main
+		) { [weak self] _ in
+			guard let self else { return }
+			Task { [weak self] in
+				guard let self else { return }
+				do {
+					let items = try await self.favoritesStore.fetchAll()
+					let ids = Set(items.map(\.id))
+					await MainActor.run {
+						self.favoriteIDs = ids
+						self.collectionView.reloadData()
+					}
+				} catch { }
+			}
+		}
 	}
 	
 	private func columns(for width: CGFloat) -> Int {
@@ -185,56 +246,86 @@ extension RecipeListViewController: UICollectionViewDataSource {
 	}
 	
 	func collectionView(
-    _ collectionView: UICollectionView,
-    cellForItemAt indexPath: IndexPath
-) -> UICollectionViewCell {
-    let dequeued = collectionView.dequeueReusableCell(
-        withReuseIdentifier: RecipeCardCell.reuseId,
-        for: indexPath
-    )
-    guard let cell = dequeued as? RecipeCardCell else {
-        assertionFailure("Unexpected cell type for reuse id: \(RecipeCardCell.reuseId)")
-        return dequeued
-    }
-    
-    let vm = items[indexPath.item]
-    cell.configure(title: vm.title, subtitle: vm.subtitle)
-    
-    imageTasks[indexPath]?.cancel()
-    imageTasks[indexPath] = nil
-    
-    guard let url = vm.thumbnailURL else {
-        cell.setPlaceholder()
-        return cell
-    }
-    
-    if let cached = imageLoader.cachedImage(for: url) {
-        cell.setImage(cached)
-        return cell
-    }
-    
-    cell.setPlaceholder()
-    let expectedId = vm.id
-    let task = Task { [weak self, weak collectionView] in
-        guard let self else { return }
-        if let image = try? await self.imageLoader.image(from: url) {
-            await MainActor.run {
-                guard
-                    let collectionView,
-					let visibleCell = collectionView.cellForItem(
-						at: indexPath
-					) as? RecipeCardCell
-                else { return }
-				guard indexPath.item < self.items.count, self
-					.items[indexPath.item].id == expectedId else { return }
-                visibleCell.setImage(image)
-            }
-        }
-    }
-    imageTasks[indexPath] = task
-    
-    return cell
-}
+		_ collectionView: UICollectionView,
+		cellForItemAt indexPath: IndexPath
+	) -> UICollectionViewCell {
+		let dequeued = collectionView.dequeueReusableCell(
+			withReuseIdentifier: RecipeCardCell.reuseId,
+			for: indexPath
+		)
+		guard let cell = dequeued as? RecipeCardCell else {
+			assertionFailure("Unexpected cell type for reuse id: \(RecipeCardCell.reuseId)")
+			return dequeued
+		}
+		
+		let vm = items[indexPath.item]
+		let isFavorite = favoriteIDs.contains(vm.id)
+		cell.configure(title: vm.title, subtitle: vm.subtitle, isFavorite: isFavorite)
+		
+		imageTasks[indexPath]?.cancel()
+		imageTasks[indexPath] = nil
+		
+		cell.onToggleFavorite = { [weak self, weak collectionView] in
+			guard let self else { return }
+			let favoriteItem = FavoriteItem(
+				id: vm.id,
+				title: vm.title,
+				subtitle: vm.subtitle,
+				thumbnailURL: vm.thumbnailURL,
+				dateAdded: Date()
+			)
+			Task { [weak self, weak collectionView] in
+				guard let self else { return }
+				do {
+					let nowFavorite = try await self.favoritesStore.toggle(item: favoriteItem)
+					await MainActor.run {
+						if nowFavorite {
+							self.favoriteIDs.insert(vm.id)
+						} else {
+							self.favoriteIDs.remove(vm.id)
+						}
+						if let collectionView,
+						   let visibleCell = collectionView.cellForItem(at: indexPath) as? RecipeCardCell {
+							visibleCell.configure(title: vm.title, subtitle: vm.subtitle, isFavorite: nowFavorite)
+						}
+					}
+				} catch {
+				}
+			}
+		}
+		
+		guard let url = vm.thumbnailURL else {
+			cell.setPlaceholder()
+			return cell
+		}
+		
+		if let cached = imageLoader.cachedImage(for: url) {
+			cell.setImage(cached)
+			return cell
+		}
+		
+		cell.setPlaceholder()
+		let expectedId = vm.id
+		let task = Task { [weak self, weak collectionView] in
+			guard let self else { return }
+			if let image = try? await self.imageLoader.image(from: url) {
+				await MainActor.run {
+					guard
+						let collectionView,
+						let visibleCell = collectionView.cellForItem(
+							at: indexPath
+						) as? RecipeCardCell
+					else { return }
+					guard indexPath.item < self.items.count, self
+						.items[indexPath.item].id == expectedId else { return }
+					visibleCell.setImage(image)
+				}
+			}
+		}
+		imageTasks[indexPath] = task
+		
+		return cell
+	}
 }
 
 extension RecipeListViewController: UICollectionViewDelegate {
@@ -439,4 +530,3 @@ private final class StateOverlayView: UIView {
 		onRetry?()
 	}
 }
-

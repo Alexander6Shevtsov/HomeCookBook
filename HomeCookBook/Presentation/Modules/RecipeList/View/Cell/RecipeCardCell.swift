@@ -15,12 +15,17 @@ final class RecipeCardCell: UICollectionViewCell {
 	private let subtitleLabel = UILabel()
 	private let labelsStack = UIStackView()
 	private let shadowView = UIView()
+	private let favoriteButton = UIButton(type: .system)
+	
+	var onToggleFavorite: (() -> Void)?
+	private var isFavorite: Bool = false
 	
 	private enum UIConst {
 		static let cornerRadius: CGFloat = 12
 		static let padding: CGFloat = 10
 		static let labelsSpacing: CGFloat = 4
 		static let imageAspect: CGFloat = 0.75
+		static let favoriteButtonSize: CGFloat = 28
 	}
 	
 	override init(frame: CGRect) {
@@ -38,6 +43,9 @@ final class RecipeCardCell: UICollectionViewCell {
 		imageView.layer.removeAllAnimations()
 		titleLabel.text = nil
 		subtitleLabel.text = nil
+		onToggleFavorite = nil
+		isFavorite = false
+		updateFavoriteAppearance()
 	}
 	
 	private func setupUI() {
@@ -73,8 +81,16 @@ final class RecipeCardCell: UICollectionViewCell {
 		labelsStack.addArrangedSubview(titleLabel)
 		labelsStack.addArrangedSubview(subtitleLabel)
 		
+		favoriteButton.translatesAutoresizingMaskIntoConstraints = false
+		let symbolConfig = UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)
+		favoriteButton.setPreferredSymbolConfiguration(symbolConfig, forImageIn: .normal)
+		favoriteButton.tintColor = .systemYellow
+		favoriteButton.addTarget(self, action: #selector(didTapFavorite), for: .touchUpInside)
+		updateFavoriteAppearance()
+		
 		contentView.addSubview(imageView)
 		contentView.addSubview(labelsStack)
+		contentView.addSubview(favoriteButton)
 		
 		NSLayoutConstraint.activate([
 			imageView.topAnchor.constraint(equalTo: contentView.topAnchor),
@@ -85,7 +101,12 @@ final class RecipeCardCell: UICollectionViewCell {
 			labelsStack.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: UIConst.padding),
 			labelsStack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: UIConst.padding),
 			labelsStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -UIConst.padding),
-			labelsStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -UIConst.padding)
+			labelsStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -UIConst.padding),
+			
+			favoriteButton.widthAnchor.constraint(equalToConstant: UIConst.favoriteButtonSize),
+			favoriteButton.heightAnchor.constraint(equalToConstant: UIConst.favoriteButtonSize),
+			favoriteButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -UIConst.padding),
+			favoriteButton.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -UIConst.padding)
 		])
 		
 		let selectedBG = UIView()
@@ -119,10 +140,12 @@ final class RecipeCardCell: UICollectionViewCell {
 		bgLayer.shadowPath = UIBezierPath(roundedRect: bounds, cornerRadius: UIConst.cornerRadius).cgPath
 	}
 	
-	func configure(title: String, subtitle: String?) {
+	func configure(title: String, subtitle: String?, isFavorite: Bool) {
 		titleLabel.text = title
 		subtitleLabel.text = subtitle
 		subtitleLabel.isHidden = (subtitle ?? "").isEmpty
+		self.isFavorite = isFavorite
+		updateFavoriteAppearance()
 	}
 	
 	func setPlaceholder() {
@@ -136,5 +159,15 @@ final class RecipeCardCell: UICollectionViewCell {
 			self.imageView.tintColor = nil
 		}, completion: nil)
 	}
+	
+	private func updateFavoriteAppearance() {
+		let imageName = isFavorite ? "star.fill" : "star"
+		let image = UIImage(systemName: imageName)
+		favoriteButton.setImage(image, for: .normal)
+		favoriteButton.alpha = isFavorite ? 1.0 : 0.9
+	}
+	
+	@objc private func didTapFavorite() {
+		onToggleFavorite?()
+	}
 }
-

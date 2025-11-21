@@ -8,8 +8,15 @@
 import UIKit
 
 enum RecipeDetailAssembly {
-	static func build(mealId: String, service: MealsService) -> UIViewController {
+	static func build(
+		mealId: String,
+		service: MealsService,
+		favoritesStore: FavoritesStore
+	) -> UIViewController {
 		let view = RecipeDetailViewController()
+		view.mealId = mealId
+		view.favoritesStore = favoritesStore
+		
 		let router = RecipeDetailRouter(viewController: view)
 		let interactor = RecipeDetailInteractor(mealId: mealId, service: service, output: nil)
 		let presenter = RecipeDetailPresenter(
@@ -23,4 +30,3 @@ enum RecipeDetailAssembly {
 		return view
 	}
 }
-

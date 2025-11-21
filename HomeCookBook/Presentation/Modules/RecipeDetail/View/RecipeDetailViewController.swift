@@ -11,6 +11,9 @@ final class RecipeDetailViewController: UIViewController {
 	
 	var output: RecipeDetailViewOutput?
 	
+	var favoritesStore: FavoritesStore = FavoritesStoreImpl()
+	var mealId: String = ""
+	
 	private let imageView = UIImageView()
 	private let textView = UITextView()
 	private let imageLoader = ImageLoader.shared
@@ -24,15 +27,27 @@ final class RecipeDetailViewController: UIViewController {
 	private lazy var activityItem = UIBarButtonItem(customView: activityIndicator)
 	private var spinnerDelayTask: Task<Void, Never>?
 	
+	private var favoriteBarButtonItem: UIBarButtonItem!
+	private var isFavorite: Bool = false
+	private var favoritesObserver: NSObjectProtocol?
+	
 	private enum Constants {
 		static let title = "Recipe"
 		static let spacing: CGFloat = 12
 		static let imageHeight: CGFloat = 220
 	}
 	
+	deinit {
+		if let observer = favoritesObserver {
+			NotificationCenter.default.removeObserver(observer)
+		}
+	}
+	
 	override func viewDidLoad() {
 		super.viewDidLoad()
 		setupUI()
+		setupFavoriteButton()
+		setupFavoritesSync()
 		output?.viewDidLoad()
 	}
 	
@@ -68,8 +83,71 @@ final class RecipeDetailViewController: UIViewController {
 			textView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
 		])
 		
-		navigationItem.rightBarButtonItem = activityItem
 		activityIndicator.stopAnimating()
+	}
+	
+	private func setupFavoriteButton() {
+		favoriteBarButtonItem = UIBarButtonItem(
+			image: UIImage(systemName: "star"),
+			style: .plain,
+			target: self,
+			action: #selector(didTapFavorite)
+		)
+		favoriteBarButtonItem.tintColor = .systemYellow
+		navigationItem.rightBarButtonItems = [favoriteBarButtonItem, activityItem]
+		
+		Task { [weak self] in
+			guard let self else { return }
+			let isFav = await self.favoritesStore.isFavorite(id: self.mealId)
+			await MainActor.run {
+				self.isFavorite = isFav
+				self.updateFavoriteBarButton()
+			}
+		}
+	}
+	
+	private func setupFavoritesSync() {
+		favoritesObserver = NotificationCenter.default.addObserver(
+			forName: .favoritesDidChange,
+			object: nil,
+			queue: .main
+		) { [weak self] _ in
+			guard let self else { return }
+			Task { [weak self] in
+				guard let self else { return }
+				let isFav = await self.favoritesStore.isFavorite(id: self.mealId)
+				await MainActor.run {
+					self.isFavorite = isFav
+					self.updateFavoriteBarButton()
+				}
+			}
+		}
+	}
+	
+	private func updateFavoriteBarButton() {
+		let imageName = isFavorite ? "star.fill" : "star"
+		favoriteBarButtonItem.image = UIImage(systemName: imageName)
+	}
+	
+	@objc private func didTapFavorite() {
+		let favorite = FavoriteItem(
+			id: mealId,
+			title: title ?? "",
+			subtitle: nil,
+			thumbnailURL: nil,
+			dateAdded: Date()
+		)
+		Task { [weak self] in
+			guard let self else { return }
+			do {
+				let nowFavorite = try await self.favoritesStore.toggle(item: favorite)
+				await MainActor.run {
+					self.isFavorite = nowFavorite
+					self.updateFavoriteBarButton()
+				}
+			} catch {
+			}
+		}
 	}
 }
 
@@ -109,7 +187,7 @@ extension RecipeDetailViewController: RecipeDetailViewInput {
 		if isLoading {
 			spinnerDelayTask?.cancel()
 			spinnerDelayTask = Task { [weak self] in
-				try? await Task.sleep(nanoseconds: 200_000_000) // 200 мс
+				try? await Task.sleep(nanoseconds: 200_000_000) 
 				guard let self, !Task.isCancelled else { return }
 				await MainActor.run { self.activityIndicator.startAnimating() }
 			}
@@ -126,4 +204,3 @@ extension RecipeDetailViewController: RecipeDetailViewInput {
 		present(alert, animated: true)
 	}
 }
-
