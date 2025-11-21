@@ -33,6 +33,7 @@ final class RecipeDetailViewController: UIViewController {
 	private var recentlyChangedFavoriteIDs: Set<String> = []
 	
 	private var currentTitleText: String?
+	private var currentImageURL: URL?
 	
 	private enum Constants {
 		static let fallbackTitle = "Recipe"
@@ -99,6 +100,7 @@ final class RecipeDetailViewController: UIViewController {
 		else if let url = initialImageURL, let cached = imageLoader.cachedImage(for: url) {
 			imageView.image = cached
 			imageView.tintColor = nil
+			currentImageURL = url
 		}
 		
 		instructionsLabel.numberOfLines = 0
@@ -181,11 +183,12 @@ final class RecipeDetailViewController: UIViewController {
 	}
 	
 	@objc private func didTapFavorite() {
+		let thumbURL = currentImageURL ?? initialImageURL
 		let favorite = FavoriteItem(
 			id: mealId,
 			title: currentTitleText ?? "",
 			subtitle: nil,
-			thumbnailURL: nil,
+			thumbnailURL: thumbURL,
 			dateAdded: Date()
 		)
 		Task { [weak self] in
@@ -208,6 +211,7 @@ extension RecipeDetailViewController: RecipeDetailViewInput {
 		self.currentTitleText = title
 		self.titleLabel.text = title
 		self.instructionsLabel.text = instructions
+		self.currentImageURL = imageURL
 		
 		imageTask?.cancel()
 		imageTask = nil
@@ -255,4 +259,3 @@ extension RecipeDetailViewController: RecipeDetailViewInput {
 		present(alert, animated: true)
 	}
 }
-
