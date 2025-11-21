@@ -203,26 +203,36 @@ extension RecipeListViewController: UICollectionViewDataSource {
 		
 		let vm = items[indexPath.item]
 		cell.configure(title: vm.title, subtitle: vm.subtitle)
-		cell.setPlaceholder()
 		
 		imageTasks[indexPath]?.cancel()
 		imageTasks[indexPath] = nil
 		
-		if let url = vm.thumbnailURL {
-			let task = Task { [weak self, weak collectionView] in
-				guard let self else { return }
-				if let image = try? await self.imageLoader.image(from: url) {
-					await MainActor.run {
-						guard
-							let collectionView,
-							let visibleCell = collectionView.cellForItem(at: indexPath) as? RecipeCardCell
-						else { return }
-						visibleCell.setImage(image)
-					}
+		guard let url = vm.thumbnailURL else {
+			cell.setPlaceholder()
+			return cell
+		}
+		
+		if let cached = imageLoader.cachedImage(for: url) {
+			cell.setImage(cached)
+			return cell
+		}
+		
+		cell.setPlaceholder()
+		let expectedId = vm.id
+		let task = Task { [weak self, weak collectionView] in
+			guard let self else { return }
+			if let image = try? await self.imageLoader.image(from: url) {
+				await MainActor.run {
+					guard
+						let collectionView,
+						let visibleCell = collectionView.cellForItem(at: indexPath) as? RecipeCardCell
+					else { return }
+					guard indexPath.item < self.items.count, self.items[indexPath.item].id == expectedId else { return }
+					visibleCell.setImage(image)
 				}
 			}
-			imageTasks[indexPath] = task
 		}
+		imageTasks[indexPath] = task
 		
 		return cell
 	}
@@ -342,16 +352,26 @@ extension RecipeListViewController: RecipeListViewInput {
 	
 	func showRefreshing(_ isRefreshing: Bool) {
 		if isRefreshing {
-			if !(collectionView.refreshControl?.isRefreshing ?? false) {
-				collectionView.refreshControl?.beginRefreshing()
-				if collectionView.contentOffset.y == 0 {
-					let offset = CGPoint(x: 0, y: -(collectionView.refreshControl?.frame.size.height ?? 0))
-					collectionView.setContentOffset(offset, animated: true)
+			let topInset = collectionView.adjustedContentInset.top
+			let atTop = collectionView.contentOffset.y <= -topInset + 0.5
+			
+			if !atTop {
+				let targetOffset = CGPoint(x: 0, y: -topInset)
+				collectionView.setContentOffset(targetOffset, animated: true)
+			}
+			
+			DispatchQueue.main.async { [weak self] in
+				guard let self else { return }
+				if self.collectionView.refreshControl?.isRefreshing != true {
+					self.collectionView.refreshControl?.beginRefreshing()
 				}
 			}
 		} else {
-			if collectionView.refreshControl?.isRefreshing == true {
-				collectionView.refreshControl?.endRefreshing()
+			DispatchQueue.main.async { [weak self] in
+				guard let self else { return }
+				if self.collectionView.refreshControl?.isRefreshing == true {
+					self.collectionView.refreshControl?.endRefreshing()
+				}
 			}
 		}
 	}
@@ -451,4 +471,3 @@ private final class StateOverlayView: UIView {
 		onRetry?()
 	}
 }
-

@@ -16,6 +16,14 @@ final class RecipeDetailViewController: UIViewController {
 	private let imageLoader = ImageLoader.shared
 	private var imageTask: Task<Void, Never>?
 	
+	private lazy var activityIndicator: UIActivityIndicatorView = {
+		let activity = UIActivityIndicatorView(style: .medium)
+		activity.hidesWhenStopped = true
+		return activity
+	}()
+	private lazy var activityItem = UIBarButtonItem(customView: activityIndicator)
+	private var spinnerDelayTask: Task<Void, Never>?
+	
 	private enum Constants {
 		static let title = "Recipe"
 		static let spacing: CGFloat = 12
@@ -59,6 +67,9 @@ final class RecipeDetailViewController: UIViewController {
 			textView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -Constants.spacing),
 			textView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
 		])
+		
+		navigationItem.rightBarButtonItem = activityItem
+		activityIndicator.stopAnimating()
 	}
 }
 
@@ -69,6 +80,13 @@ extension RecipeDetailViewController: RecipeDetailViewInput {
 		
 		imageTask?.cancel()
 		imageTask = nil
+		
+		if let url = imageURL, let cached = imageLoader.cachedImage(for: url) {
+			imageView.image = cached
+			imageView.tintColor = nil
+			return
+		}
+		
 		imageView.image = UIImage(systemName: "photo")
 		imageView.tintColor = .tertiaryLabel
 		
@@ -89,11 +107,16 @@ extension RecipeDetailViewController: RecipeDetailViewInput {
 	
 	func showLoading(_ isLoading: Bool) {
 		if isLoading {
-			let activity = UIActivityIndicatorView(style: .medium)
-			activity.startAnimating()
-			navigationItem.rightBarButtonItem = UIBarButtonItem(customView: activity)
+			spinnerDelayTask?.cancel()
+			spinnerDelayTask = Task { [weak self] in
+				try? await Task.sleep(nanoseconds: 200_000_000) // 200 мс
+				guard let self, !Task.isCancelled else { return }
+				await MainActor.run { self.activityIndicator.startAnimating() }
+			}
 		} else {
-			navigationItem.rightBarButtonItem = nil
+			spinnerDelayTask?.cancel()
+			spinnerDelayTask = nil
+			activityIndicator.stopAnimating()
 		}
 	}
 	

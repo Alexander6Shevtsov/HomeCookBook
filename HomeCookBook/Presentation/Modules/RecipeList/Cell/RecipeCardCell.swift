@@ -35,7 +35,7 @@ final class RecipeCardCell: UICollectionViewCell {
 	
 	override func prepareForReuse() {
 		super.prepareForReuse()
-		setPlaceholder()
+		imageView.layer.removeAllAnimations()
 		titleLabel.text = nil
 		subtitleLabel.text = nil
 	}

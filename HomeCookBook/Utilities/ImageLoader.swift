@@ -10,7 +10,12 @@ import UIKit
 actor ImageLoader {
 	static let shared = ImageLoader()
 	
-	private let cache = NSCache<NSURL, UIImage>()
+	private static let memoryCache: NSCache<NSURL, UIImage> = {
+		let cache = NSCache<NSURL, UIImage>()
+		cache.totalCostLimit = 300 * 1024 * 1024
+		return cache
+	}()
+	
 	private var inFlight: [URL: Task<UIImage, Error>] = [:]
 	private var prefetching: Set<URL> = []
 	
@@ -18,16 +23,18 @@ actor ImageLoader {
 	private let diskCacheDirectory: URL
 	
 	init() {
-		cache.totalCostLimit = 100 * 1024 * 1024
-		
 		let caches = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first!
 		let dir = caches.appendingPathComponent("ImageCache", isDirectory: true)
 		self.diskCacheDirectory = dir
 		try? fileManager.createDirectory(at: dir, withIntermediateDirectories: true)
 	}
+	
+	nonisolated func cachedImage(for url: URL) -> UIImage? {
+		Self.memoryCache.object(forKey: url as NSURL)
+	}
 		
 	func image(from url: URL) async throws -> UIImage {
-		if let cached = cache.object(forKey: url as NSURL) {
+		if let cached = Self.memoryCache.object(forKey: url as NSURL) {
 			return cached
 		}
 		if let diskImage = loadImageFromDisk(for: url) {
@@ -58,7 +65,7 @@ actor ImageLoader {
 	}
 	
 	func prefetch(url: URL) {
-		if cache.object(forKey: url as NSURL) != nil { return }
+		if Self.memoryCache.object(forKey: url as NSURL) != nil { return }
 		if loadImageFromDisk(for: url) != nil { return }
 		if inFlight[url] != nil { return }
 		
@@ -107,7 +114,7 @@ actor ImageLoader {
 	}
 	
 	func clearCache() {
-		cache.removeAllObjects()
+		Self.memoryCache.removeAllObjects()
 		try? fileManager.removeItem(at: diskCacheDirectory)
 		try? fileManager.createDirectory(at: diskCacheDirectory, withIntermediateDirectories: true)
 	}
@@ -122,7 +129,7 @@ actor ImageLoader {
 	
 	private func storeInMemoryCache(image: UIImage, for url: URL) {
 		let cost = imageCost(image)
-		cache.setObject(image, forKey: url as NSURL, cost: cost)
+		Self.memoryCache.setObject(image, forKey: url as NSURL, cost: cost)
 	}
 	
 	private func imageCost(_ image: UIImage) -> Int {
