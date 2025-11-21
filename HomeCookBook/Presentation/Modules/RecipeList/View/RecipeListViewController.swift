@@ -26,6 +26,8 @@ final class RecipeListViewController: UIViewController {
 	
 	private let stateView = StateOverlayView()
 	
+	private var filterButton: UIBarButtonItem!
+	
 	private enum Constants {
 		static let sectionInset: CGFloat = 16
 		static let interItemSpacing: CGFloat = 12
@@ -72,6 +74,7 @@ final class RecipeListViewController: UIViewController {
 		setupUI()
 		setupFavorites()
 		output?.viewDidLoad()
+		output?.requestCategories()
 	}
 	
 	private func setupUI() {
@@ -85,6 +88,14 @@ final class RecipeListViewController: UIViewController {
 		searchController.searchBar.placeholder = "Search recipes"
 		navigationItem.searchController = searchController
 		definesPresentationContext = true
+
+		let initialMenu = makeInitialFilterMenu()
+		filterButton = UIBarButtonItem(
+			image: UIImage(systemName: "line.3.horizontal.decrease.circle"),
+			menu: initialMenu
+		)
+		filterButton.accessibilityLabel = "Filter"
+		navigationItem.leftBarButtonItem = filterButton
 		
 		let favoritesButton = UIBarButtonItem(
 			image: UIImage(systemName: "star"),
@@ -94,6 +105,8 @@ final class RecipeListViewController: UIViewController {
 		)
 		favoritesButton.accessibilityLabel = "Favorites"
 		navigationItem.rightBarButtonItem = favoritesButton
+		
+		setFilterTitle(nil)
 		
 		collectionView.translatesAutoresizingMaskIntoConstraints = false
 		collectionView.backgroundColor = .clear
@@ -124,6 +137,42 @@ final class RecipeListViewController: UIViewController {
 		])
 	}
 	
+	private func setFilterTitle(_ selected: String?) {
+		guard let selected, !selected.isEmpty else {
+			navigationItem.largeTitleDisplayMode = .never
+			let label = UILabel()
+			label.text = "All"
+			label.font = .preferredFont(forTextStyle: .headline)
+			label.textColor = .label
+			label.textAlignment = .center
+			label.adjustsFontForContentSizeCategory = true
+			label.adjustsFontSizeToFitWidth = true
+			label.minimumScaleFactor = 0.8
+			navigationItem.titleView = label
+			return
+		}
+		navigationItem.largeTitleDisplayMode = .never
+		let label = UILabel()
+		label.text = selected
+		label.font = .preferredFont(forTextStyle: .headline)
+		label.textColor = .label
+		label.textAlignment = .center
+		label.adjustsFontForContentSizeCategory = true
+		label.adjustsFontSizeToFitWidth = true
+		label.minimumScaleFactor = 0.8
+		navigationItem.titleView = label
+	}
+	
+	private func makeInitialFilterMenu() -> UIMenu {
+		let allAction = UIAction(title: "All", state: .on) { [weak self] _ in
+			self?.filterButton.title = nil
+			self?.setFilterTitle(nil)
+			self?.output?.selectCategory(nil)
+		}
+		let loading = UIAction(title: "Loading…", attributes: [.disabled]) { _ in }
+		return UIMenu(title: "Category", options: .singleSelection, children: [allAction, loading])
+	}
+	
 	@objc private func didTapFavorites() {
 		output?.showFavorites()
 	}
@@ -137,8 +186,8 @@ final class RecipeListViewController: UIViewController {
 		Task { [weak self] in
 			guard let self else { return }
 			do {
-				let items = try await favoritesStore.fetchAll()
-				let ids = Set(items.map(\.id))
+			 let items = try await favoritesStore.fetchAll()
+			 let ids = Set(items.map(\.id))
 				await MainActor.run {
 					self.favoriteIDs = ids
 					self.collectionView.reloadData()
@@ -455,6 +504,28 @@ extension RecipeListViewController: RecipeListViewInput {
 	
 	func showError(message: String) {
 		showErrorState(message: message)
+	}
+	
+	func showCategoryMenu(categories: [String], selected: String?) {
+		setFilterTitle(selected)
+		
+		let allAction = UIAction(title: "All", state: selected == nil ? .on : .off) { [weak self] _ in
+			self?.filterButton.title = nil
+			self?.setFilterTitle(nil)
+			self?.output?.selectCategory(nil)
+		}
+		
+		let categoryActions: [UIAction] = categories.map { cat in
+			let state: UIMenuElement.State = (cat == selected) ? .on : .off
+			return UIAction(title: cat, state: state) { [weak self] _ in
+				self?.filterButton.title = cat
+				self?.setFilterTitle(cat)
+				self?.output?.selectCategory(cat)
+			}
+		}
+		
+		let menu = UIMenu(title: "Category", options: .singleSelection, children: [allAction] + categoryActions)
+		filterButton.menu = menu
 	}
 }
 

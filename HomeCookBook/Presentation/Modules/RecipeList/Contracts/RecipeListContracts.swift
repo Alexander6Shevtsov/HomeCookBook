@@ -10,6 +10,7 @@ import UIKit
 protocol RecipeListViewInput: AnyObject {
 	func display(items: [RecipeListItemViewModel])
 	func showError(message: String)
+	func showCategoryMenu(categories: [String], selected: String?)
 }
 
 protocol RecipeListViewOutput: AnyObject {
@@ -20,6 +21,8 @@ protocol RecipeListViewOutput: AnyObject {
 	func retry()
 	func loadMore()
 	func showFavorites()
+	func requestCategories()
+	func selectCategory(_ name: String?)
 }
 
 protocol RecipeListInteractorInput: AnyObject {
@@ -27,12 +30,15 @@ protocol RecipeListInteractorInput: AnyObject {
 	func refresh()
 	func search(query: String)
 	func loadMoreNextLetter()
+	func fetchCategories()
+	func searchCategory(_ name: String)
 }
 
 protocol RecipeListInteractorOutput: AnyObject {
 	func didLoad(items: [RecipeListItemEntity])
 	func didLoadMore(items: [RecipeListItemEntity])
 	func didFailToLoad(error: Error)
+	func didLoadCategories(_ categories: [String])
 }
 
 protocol RecipeListRouterInput: AnyObject {

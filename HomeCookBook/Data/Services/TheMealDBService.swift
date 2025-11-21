@@ -13,6 +13,7 @@ protocol MealsService {
 	func fetch(firstLetter: Character) async throws -> [RecipeListItemEntity]
 	func fetch(category: String) async throws -> [RecipeListItemEntity]
 	func fetchDetails(id: String) async throws -> RecipeDetailEntity
+	func fetchCategories() async throws -> [String]
 }
 
 final class TheMealDBService: MealsService {
@@ -92,6 +93,15 @@ final class TheMealDBService: MealsService {
 			instructions: dto.strInstructions ?? ""
 		)
 	}
+	
+	func fetchCategories() async throws -> [String] {
+		guard let url = URL(string: "https://www.themealdb.com/api/json/v1/1/list.php?c=list") else {
+			throw URLError(.badURL)
+		}
+		let response: CategoryListResponseDTO = try await client.get(url)
+		let items = response.meals ?? []
+		return items.map { $0.strCategory }
+	}
 }
 
 private struct MealFilterResponseDTO: Decodable {
@@ -102,5 +112,13 @@ private struct MealFilterItemDTO: Decodable {
 	let idMeal: String
 	let strMeal: String
 	let strMealThumb: String?
+}
+
+private struct CategoryListResponseDTO: Decodable {
+	let meals: [CategoryItemDTO]?
+}
+
+private struct CategoryItemDTO: Decodable {
+	let strCategory: String
 }
 

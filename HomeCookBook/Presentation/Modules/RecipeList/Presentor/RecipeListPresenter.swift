@@ -26,8 +26,11 @@ final class RecipeListPresenter {
 		case initial
 		case refresh
 		case search(String)
+		case category(String)
 	}
 	private var lastAction: LastAction = .initial
+	
+	private var selectedCategory: String?
 	
 	init(
 		view: RecipeListViewInput,
@@ -78,12 +81,14 @@ extension RecipeListPresenter: RecipeListViewOutput {
 	}
 	
 	func refresh() {
+		selectedCategory = nil
 		lastAction = .refresh
 		hasMoreServerData = true
 		interactor.refresh()
 	}
 	
 	func search(query: String) {
+		selectedCategory = nil
 		let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
 		
 		searchTask?.cancel()
@@ -116,6 +121,9 @@ extension RecipeListPresenter: RecipeListViewOutput {
 		case .search(let q):
 			hasMoreServerData = false
 			interactor.search(query: q)
+		case .category(let c):
+			hasMoreServerData = false
+			interactor.searchCategory(c)
 		}
 	}
 	
@@ -139,7 +147,7 @@ extension RecipeListPresenter: RecipeListViewOutput {
 		}
 		
 		switch lastAction {
-		case .search:
+		case .search, .category:
 			return
 		case .initial, .refresh:
 			guard hasMoreServerData else { return }
@@ -151,6 +159,23 @@ extension RecipeListPresenter: RecipeListViewOutput {
 	func showFavorites() {
 		router.routeToFavorites()
 	}
+	
+	func requestCategories() {
+		interactor.fetchCategories()
+	}
+	
+	func selectCategory(_ name: String?) {
+		selectedCategory = name
+		if let name {
+			lastAction = .category(name)
+			hasMoreServerData = false
+			interactor.searchCategory(name)
+		} else {
+			lastAction = .initial
+			hasMoreServerData = true
+			interactor.loadInitial()
+		}
+	}
 }
 
 extension RecipeListPresenter: RecipeListInteractorOutput {
@@ -161,7 +186,7 @@ extension RecipeListPresenter: RecipeListInteractorOutput {
 		switch lastAction {
 		case .initial, .refresh:
 			hasMoreServerData = true
-		case .search:
+		case .search, .category:
 			hasMoreServerData = false
 		}
 		
@@ -195,6 +220,10 @@ extension RecipeListPresenter: RecipeListInteractorOutput {
 	func didFailToLoad(error: Error) {
 		isLoadingMore = false
 		view?.showError(message: error.localizedDescription)
+	}
+	
+	func didLoadCategories(_ categories: [String]) {
+		view?.showCategoryMenu(categories: categories, selected: selectedCategory)
 	}
 }
 

@@ -12,6 +12,7 @@ final class RecipeListInteractor: RecipeListInteractorInput {
 	private weak var output: RecipeListInteractorOutput?
 	private let service: MealsService
 	private var currentTask: Task<Void, Never>?
+	private var categoriesTask: Task<Void, Never>?
 	
 	private let letters: [Character] = Array("abcdefghijklmnopqrstuvwxyz")
 	private var currentLetterIndex: Int?
@@ -28,14 +29,18 @@ final class RecipeListInteractor: RecipeListInteractorInput {
 	func loadInitial() {
 		currentLetterIndex = 0
 		startNewTask {
-			try await self.fetchFirstNonEmpty(startingAt: 0, replace: true)
+			let letter = self.letters[self.currentLetterIndex ?? 0]
+			let items = try await self.service.fetch(firstLetter: letter)
+			await MainActor.run { self.output?.didLoad(items: items) }
 		}
 	}
 	
 	func refresh() {
 		currentLetterIndex = 0
 		startNewTask {
-			try await self.fetchFirstNonEmpty(startingAt: 0, replace: true)
+			let letter = self.letters[self.currentLetterIndex ?? 0]
+			let items = try await self.service.fetch(firstLetter: letter)
+			await MainActor.run { self.output?.didLoad(items: items) }
 		}
 	}
 	
@@ -71,8 +76,35 @@ final class RecipeListInteractor: RecipeListInteractorInput {
 			}
 			return
 		}
+		currentLetterIndex = next
 		startNewTask {
-			try await self.fetchFirstNonEmpty(startingAt: next, replace: false)
+			let letter = self.letters[next]
+			let items = try await self.service.fetch(firstLetter: letter)
+			await MainActor.run { self.output?.didLoadMore(items: items) }
+		}
+	}
+	
+	func fetchCategories() {
+		categoriesTask?.cancel()
+		categoriesTask = Task { [weak self] in
+			guard let self else { return }
+			do {
+				let categories = try await self.service.fetchCategories()
+				await MainActor.run {
+					self.output?.didLoadCategories(categories)
+				}
+			} catch {
+			}
+		}
+	}
+	
+	func searchCategory(_ name: String) {
+		currentLetterIndex = nil
+		startNewTask {
+			let items = try await self.service.fetch(category: name)
+			await MainActor.run {
+				self.output?.didLoad(items: items)
+			}
 		}
 	}
 	
@@ -88,33 +120,4 @@ final class RecipeListInteractor: RecipeListInteractorInput {
 			}
 		}
 	}
-	
-	private func fetchFirstNonEmpty(startingAt start: Int, replace: Bool) async throws {
-		var idx = start
-		while idx < letters.count {
-			let letter = letters[idx]
-			let items = try await service.fetch(firstLetter: letter)
-			if !items.isEmpty {
-				await MainActor.run {
-					if replace {
-						self.output?.didLoad(items: items)
-					} else {
-						self.output?.didLoadMore(items: items)
-					}
-				}
-				self.currentLetterIndex = idx
-				return
-			}
-			idx += 1
-			if Task.isCancelled { return }
-		}
-		await MainActor.run {
-			if replace {
-				self.output?.didLoad(items: [])
-			} else {
-				self.output?.didLoadMore(items: [])
-			}
-		}
-	}
 }
-
