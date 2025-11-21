@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		421B1E362ED0E3650078B92D /* StateOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 421B1E352ED0E3650078B92D /* StateOverlayView.swift */; };
 		425728842ECF16EC00E95676 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4257287B2ECF16EC00E95676 /* Assets.xcassets */; };
 		425728862ECF16EC00E95676 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 4257287E2ECF16EC00E95676 /* LaunchScreen.storyboard */; };
 		425728882ECF16EC00E95676 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4257287A2ECF16EC00E95676 /* AppDelegate.swift */; };
@@ -37,6 +38,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		421B1E352ED0E3650078B92D /* StateOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StateOverlayView.swift; sourceTree = "<group>"; };
 		425728622ECF16C800E95676 /* HomeCookBook.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HomeCookBook.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4257287A2ECF16EC00E95676 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		4257287B2ECF16EC00E95676 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -245,6 +247,7 @@
 			children = (
 				4270D7B42ECF4F61002829AA /* Cell */,
 				425728922ECF1E8800E95676 /* RecipeListViewController.swift */,
+				421B1E352ED0E3650078B92D /* StateOverlayView.swift */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -452,6 +455,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				425728932ECF1E8800E95676 /* RecipeListViewController.swift in Sources */,
+				421B1E362ED0E3650078B92D /* StateOverlayView.swift in Sources */,
 				42E949A12ED071A200BBE470 /* CoreDataStack.swift in Sources */,
 				4270D7A12ECF3F40002829AA /* RecipeListItemEntity.swift in Sources */,
 				4270D7B02ECF43B2002829AA /* MealLookupDTO.swift in Sources */,

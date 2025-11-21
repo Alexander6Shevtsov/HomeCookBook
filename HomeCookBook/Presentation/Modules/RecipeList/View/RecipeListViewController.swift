@@ -18,6 +18,7 @@ final class RecipeListViewController: UIViewController {
 	
 	private let collectionView: UICollectionView
 	private let searchController = UISearchController(searchResultsController: nil)
+	private var searchTask: Task<Void, Never>?
 	
 	private var items: [RecipeListItemViewModel] = []
 	
@@ -28,7 +29,7 @@ final class RecipeListViewController: UIViewController {
 	
 	private var filterButton: UIBarButtonItem!
 	
-	private enum Constants {
+	private enum LayoutConstants {
 		static let sectionInset: CGFloat = 16
 		static let interItemSpacing: CGFloat = 12
 		static let lineSpacing: CGFloat = 16
@@ -39,23 +40,50 @@ final class RecipeListViewController: UIViewController {
 		
 		static let titleLines = 2
 		static let subtitleLines = 1
-		static let titleFont = UIFont.preferredFont(forTextStyle: .headline)
-		static let subtitleFont = UIFont.preferredFont(forTextStyle: .subheadline)
-		
+	}
+	
+	private enum TextConstants {
 		static let title = "Recipes"
-		
+		static let searchPlaceholder = "Search recipes"
+		static let allTitle = "All"
+		static let loadingTitle = "Loading…"
+		static let categoryMenuTitle = "Category"
+		static let emptyTitle = "No Results"
+		static let emptyMessage = "Try another query or clear the search."
+		static let errorTitle = "Something went wrong"
+		static let retryTitle = "Retry"
+		static let titleTapHint = "Прокрутить к началу"
+	}
+	
+	private enum AccessibilityConstants {
+		static let filterLabel = "Filter"
+		static let favoritesLabel = "Favorites"
+	}
+	
+	private enum SymbolNameConstants {
+		static let filterIcon = "line.3.horizontal.decrease.circle"
+		static let favoriteIcon = "star"
+		static let emptySymbol = "magnifyingglass"
+		static let errorSymbol = "exclamationmark.triangle"
+	}
+	
+	private enum BehaviorConstants {
 		static let prefetchThreshold = 12
+		static let preheatExtraRows = 2
+		static let debounceSeconds: Double = 0.3
+		static let recentlyChangedWindow: TimeInterval = 1.0
+		static let regularWidthThreshold: CGFloat = 700
 	}
 	
 	init() {
 		let layout = UICollectionViewFlowLayout()
-		layout.minimumInteritemSpacing = Constants.interItemSpacing
-		layout.minimumLineSpacing = Constants.lineSpacing
+		layout.minimumInteritemSpacing = LayoutConstants.interItemSpacing
+		layout.minimumLineSpacing = LayoutConstants.lineSpacing
 		layout.sectionInset = UIEdgeInsets(
-			top: Constants.sectionInset,
-			left: Constants.sectionInset,
-			bottom: Constants.sectionInset,
-			right: Constants.sectionInset
+			top: LayoutConstants.sectionInset,
+			left: LayoutConstants.sectionInset,
+			bottom: LayoutConstants.sectionInset,
+			right: LayoutConstants.sectionInset
 		)
 		self.collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
 		super.init(nibName: nil, bundle: nil)
@@ -79,31 +107,31 @@ final class RecipeListViewController: UIViewController {
 	
 	private func setupUI() {
 		view.backgroundColor = .systemBackground
-		title = Constants.title
+		title = TextConstants.title
 		navigationItem.largeTitleDisplayMode = .always
 		
 		searchController.searchResultsUpdater = self
 		searchController.obscuresBackgroundDuringPresentation = false
 		searchController.searchBar.autocapitalizationType = .none
-		searchController.searchBar.placeholder = "Search recipes"
+		searchController.searchBar.placeholder = TextConstants.searchPlaceholder
 		navigationItem.searchController = searchController
 		definesPresentationContext = true
-
+		
 		let initialMenu = makeInitialFilterMenu()
 		filterButton = UIBarButtonItem(
-			image: UIImage(systemName: "line.3.horizontal.decrease.circle"),
+			image: UIImage(systemName: SymbolNameConstants.filterIcon),
 			menu: initialMenu
 		)
-		filterButton.accessibilityLabel = "Filter"
+		filterButton.accessibilityLabel = AccessibilityConstants.filterLabel
 		navigationItem.leftBarButtonItem = filterButton
 		
 		let favoritesButton = UIBarButtonItem(
-			image: UIImage(systemName: "star"),
+			image: UIImage(systemName: SymbolNameConstants.favoriteIcon),
 			style: .plain,
 			target: self,
 			action: #selector(didTapFavorites)
 		)
-		favoritesButton.accessibilityLabel = "Favorites"
+		favoritesButton.accessibilityLabel = AccessibilityConstants.favoritesLabel
 		navigationItem.rightBarButtonItem = favoritesButton
 		
 		setFilterTitle(nil)
@@ -138,28 +166,14 @@ final class RecipeListViewController: UIViewController {
 	}
 	
 	private func setFilterTitle(_ selected: String?) {
-		guard let selected, !selected.isEmpty else {
-			navigationItem.largeTitleDisplayMode = .never
-			let label = UILabel()
-			label.text = "All"
-			label.font = .preferredFont(forTextStyle: .headline)
-			label.textColor = .label
-			label.textAlignment = .center
-			label.adjustsFontForContentSizeCategory = true
-			label.adjustsFontSizeToFitWidth = true
-			label.minimumScaleFactor = 0.8
-			label.isUserInteractionEnabled = true
-			let tap = UITapGestureRecognizer(target: self, action: #selector(didTapTitle))
-			label.addGestureRecognizer(tap)
-			label.accessibilityTraits.insert(.button)
-			label.accessibilityHint = "Прокрутить к началу"
-			
-			navigationItem.titleView = label
-			return
-		}
 		navigationItem.largeTitleDisplayMode = .never
+		let text = (selected?.isEmpty == false) ? selected! : TextConstants.allTitle
+		navigationItem.titleView = makeTitleLabel(text: text)
+	}
+	
+	private func makeTitleLabel(text: String) -> UILabel {
 		let label = UILabel()
-		label.text = selected
+		label.text = text
 		label.font = .preferredFont(forTextStyle: .headline)
 		label.textColor = .label
 		label.textAlignment = .center
@@ -170,9 +184,8 @@ final class RecipeListViewController: UIViewController {
 		let tap = UITapGestureRecognizer(target: self, action: #selector(didTapTitle))
 		label.addGestureRecognizer(tap)
 		label.accessibilityTraits.insert(.button)
-		label.accessibilityHint = "Прокрутить к началу"
-		
-		navigationItem.titleView = label
+		label.accessibilityHint = TextConstants.titleTapHint
+		return label
 	}
 	
 	@objc private func didTapTitle() {
@@ -182,13 +195,13 @@ final class RecipeListViewController: UIViewController {
 	}
 	
 	private func makeInitialFilterMenu() -> UIMenu {
-		let allAction = UIAction(title: "All", state: .on) { [weak self] _ in
+		let allAction = UIAction(title: TextConstants.allTitle, state: .on) { [weak self] _ in
 			self?.filterButton.title = nil
 			self?.setFilterTitle(nil)
 			self?.output?.selectCategory(nil)
 		}
-		let loading = UIAction(title: "Loading…", attributes: [.disabled]) { _ in }
-		return UIMenu(title: "Category", options: .singleSelection, children: [allAction, loading])
+		let loading = UIAction(title: TextConstants.loadingTitle, attributes: [.disabled]) { _ in }
+		return UIMenu(title: TextConstants.categoryMenuTitle, options: .singleSelection, children: [allAction, loading])
 	}
 	
 	@objc private func didTapFavorites() {
@@ -196,16 +209,13 @@ final class RecipeListViewController: UIViewController {
 	}
 	
 	private func setupFavorites() {
-		guard let favoritesStore else {
-			assertionFailure("favoritesStore must be injected via assembly before viewDidLoad")
-			return
-		}
+		guard let favoritesStore else { return }
 		
 		Task { [weak self] in
 			guard let self else { return }
 			do {
-			 let items = try await favoritesStore.fetchAll()
-			 let ids = Set(items.map(\.id))
+				let items = try await favoritesStore.fetchAll()
+				let ids = Set(items.map(\.id))
 				await MainActor.run {
 					self.favoriteIDs = ids
 					self.collectionView.reloadData()
@@ -244,29 +254,32 @@ final class RecipeListViewController: UIViewController {
 	
 	private func markRecentlyChanged(_ id: String) {
 		recentlyChangedFavoriteIDs.insert(id)
-		DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+		DispatchQueue.main.asyncAfter(deadline: .now() + BehaviorConstants.recentlyChangedWindow) { [weak self] in
 			self?.recentlyChangedFavoriteIDs.remove(id)
 		}
 	}
 	
 	private func columns(for width: CGFloat) -> Int {
-		if traitCollection.horizontalSizeClass == .regular && width > 700 { return 3 }
+		if traitCollection.horizontalSizeClass == .regular && width > BehaviorConstants.regularWidthThreshold { return 3 }
 		return 2
 	}
 	
 	private func itemSize(for width: CGFloat) -> CGSize {
 		let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout
 		let sectionInsets = layout?.sectionInset ?? .zero
-		let inter = layout?.minimumInteritemSpacing ?? Constants.interItemSpacing
+		let inter = layout?.minimumInteritemSpacing ?? LayoutConstants.interItemSpacing
 		
 		let cols = CGFloat(columns(for: width))
 		let totalHSpacing = sectionInsets.left + sectionInsets.right + inter * max(0, cols - 1)
 		let itemWidth = max(0, (width - totalHSpacing) / cols)
 		
-		let imageHeight = itemWidth * Constants.imageAspectRatio
-		let titleHeight = Constants.titleFont.lineHeight * CGFloat(Constants.titleLines)
-		let subtitleHeight = Constants.subtitleFont.lineHeight * CGFloat(Constants.subtitleLines)
-		let verticalTextSpacing = Constants.contentPadding + Constants.labelsSpacing + Constants.contentPadding
+		let imageHeight = itemWidth * LayoutConstants.imageAspectRatio
+		
+		let titleLineHeight = UIFont.preferredFont(forTextStyle: .headline).lineHeight
+		let subtitleLineHeight = UIFont.preferredFont(forTextStyle: .subheadline).lineHeight
+		let titleHeight = titleLineHeight * CGFloat(LayoutConstants.titleLines)
+		let subtitleHeight = subtitleLineHeight * CGFloat(LayoutConstants.subtitleLines)
+		let verticalTextSpacing = LayoutConstants.contentPadding + LayoutConstants.labelsSpacing + LayoutConstants.contentPadding
 		let itemHeight = imageHeight + titleHeight + subtitleHeight + verticalTextSpacing
 		return CGSize(width: floor(itemWidth), height: ceil(itemHeight))
 	}
@@ -279,9 +292,9 @@ final class RecipeListViewController: UIViewController {
 	private func showEmptyState() {
 		stateView.isHidden = false
 		stateView.configure(
-			symbolName: "magnifyingglass",
-			title: "No Results",
-			message: "Try another query or clear the search.",
+			symbolName: SymbolNameConstants.emptySymbol,
+			title: TextConstants.emptyTitle,
+			message: TextConstants.emptyMessage,
 			buttonTitle: nil
 		)
 	}
@@ -289,10 +302,10 @@ final class RecipeListViewController: UIViewController {
 	private func showErrorState(message: String) {
 		stateView.isHidden = false
 		stateView.configure(
-			symbolName: "exclamationmark.triangle",
-			title: "Something went wrong",
+			symbolName: SymbolNameConstants.errorSymbol,
+			title: TextConstants.errorTitle,
 			message: message,
-			buttonTitle: "Retry"
+			buttonTitle: TextConstants.retryTitle
 		)
 	}
 	
@@ -314,7 +327,7 @@ final class RecipeListViewController: UIViewController {
 		let size = itemSize(for: width)
 		let cols = columns(for: width)
 		let rowsOnScreen = max(1, Int(ceil(collectionView.bounds.height / size.height)))
-		let preheatRows = rowsOnScreen + 2
+		let preheatRows = rowsOnScreen + BehaviorConstants.preheatExtraRows
 		let count = min(items.count, preheatRows * cols)
 		let urls = (0..<count).compactMap { items[$0].thumbnailURL }
 		guard !urls.isEmpty else { return }
@@ -339,7 +352,6 @@ extension RecipeListViewController: UICollectionViewDataSource {
 			for: indexPath
 		)
 		guard let cell = dequeued as? RecipeCardCell else {
-			assertionFailure("Unexpected cell type for reuse id: \(RecipeCardCell.reuseId)")
 			return dequeued
 		}
 		
@@ -366,7 +378,7 @@ extension RecipeListViewController: UICollectionViewDataSource {
 				guard let self else { return }
 				do {
 					let nowFavorite = try await favoritesStore.toggle(item: favoriteItem)
-					_ = await MainActor.run {
+					await MainActor.run {
 						if nowFavorite {
 							self.favoriteIDs.insert(vm.id)
 						} else {
@@ -474,7 +486,7 @@ extension RecipeListViewController: UICollectionViewDataSourcePrefetching {
 		
 		guard !items.isEmpty else { return }
 		if let maxIndex = indexPaths.map(\.item).max(),
-		   maxIndex >= max(0, items.count - Constants.prefetchThreshold) {
+		   maxIndex >= max(0, items.count - BehaviorConstants.prefetchThreshold) {
 			output?.loadMore()
 		}
 	}
@@ -535,7 +547,7 @@ extension RecipeListViewController: RecipeListViewInput {
 	func showCategoryMenu(categories: [String], selected: String?) {
 		setFilterTitle(selected)
 		
-		let allAction = UIAction(title: "All", state: selected == nil ? .on : .off) { [weak self] _ in
+		let allAction = UIAction(title: TextConstants.allTitle, state: selected == nil ? .on : .off) { [weak self] _ in
 			self?.filterButton.title = nil
 			self?.setFilterTitle(nil)
 			self?.output?.selectCategory(nil)
@@ -550,7 +562,7 @@ extension RecipeListViewController: RecipeListViewInput {
 			}
 		}
 		
-		let menu = UIMenu(title: "Category", options: .singleSelection, children: [allAction] + categoryActions)
+		let menu = UIMenu(title: TextConstants.categoryMenuTitle, options: .singleSelection, children: [allAction] + categoryActions)
 		filterButton.menu = menu
 	}
 }
@@ -558,91 +570,16 @@ extension RecipeListViewController: RecipeListViewInput {
 extension RecipeListViewController: UISearchResultsUpdating {
 	func updateSearchResults(for searchController: UISearchController) {
 		let text = searchController.searchBar.text ?? ""
-		output?.search(query: text)
-	}
-}
-
-private final class StateOverlayView: UIView {
-	var onRetry: (() -> Void)?
-	
-	private let stack = UIStackView()
-	private let symbolView = UIImageView()
-	private let titleLabel = UILabel()
-	private let messageLabel = UILabel()
-	private let retryButton = UIButton(type: .system)
-	
-	override init(frame: CGRect) {
-		super.init(frame: frame)
-		setup()
-	}
-	
-	required init?(coder: NSCoder) {
-		super.init(coder: coder)
-		setup()
-	}
-	
-	private func setup() {
-		backgroundColor = .systemBackground
-		
-		stack.translatesAutoresizingMaskIntoConstraints = false
-		stack.axis = .vertical
-		stack.alignment = .center
-		stack.spacing = 12
-		
-		symbolView.translatesAutoresizingMaskIntoConstraints = false
-		symbolView.tintColor = .tertiaryLabel
-		symbolView.contentMode = .scaleAspectFit
-		
-		titleLabel.translatesAutoresizingMaskIntoConstraints = false
-		titleLabel.font = UIFont.preferredFont(forTextStyle: .headline)
-		titleLabel.textColor = .label
-		titleLabel.numberOfLines = 0
-		titleLabel.textAlignment = .center
-		
-		messageLabel.translatesAutoresizingMaskIntoConstraints = false
-		messageLabel.font = UIFont.preferredFont(forTextStyle: .subheadline)
-		messageLabel.textColor = .secondaryLabel
-		messageLabel.numberOfLines = 0
-		messageLabel.textAlignment = .center
-		
-		retryButton.translatesAutoresizingMaskIntoConstraints = false
-		retryButton.setTitle("Retry", for: .normal)
-		retryButton.addTarget(self, action: #selector(didTapRetry), for: .touchUpInside)
-		
-		addSubview(stack)
-		stack.addArrangedSubview(symbolView)
-		stack.addArrangedSubview(titleLabel)
-		stack.addArrangedSubview(messageLabel)
-		stack.addArrangedSubview(retryButton)
-		
-		NSLayoutConstraint.activate([
-			stack.centerXAnchor.constraint(equalTo: centerXAnchor),
-			stack.centerYAnchor.constraint(equalTo: centerYAnchor),
-			stack.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor, constant: 24),
-			stack.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -24),
-			
-			symbolView.widthAnchor.constraint(equalToConstant: 48),
-			symbolView.heightAnchor.constraint(equalToConstant: 48)
-		])
-	}
-	
-	func configure(symbolName: String, title: String, message: String, buttonTitle: String?) {
-		let config = UIImage.SymbolConfiguration(pointSize: 44, weight: .regular)
-		symbolView.image = UIImage(systemName: symbolName, withConfiguration: config)
-		
-		titleLabel.text = title
-		messageLabel.text = message
-		
-		if let title = buttonTitle, !title.isEmpty {
-			retryButton.isHidden = false
-			retryButton.setTitle(title, for: .normal)
-		} else {
-			retryButton.isHidden = true
+		searchTask?.cancel()
+		if text.isEmpty {
+			output?.search(query: "")
+			return
+		}
+		let nanos = UInt64(BehaviorConstants.debounceSeconds * 1_000_000_000)
+		searchTask = Task { [weak self] in
+			try? await Task.sleep(nanoseconds: nanos)
+			guard !Task.isCancelled else { return }
+			self?.output?.search(query: text)
 		}
 	}
-	
-	@objc private func didTapRetry() {
-		onRetry?()
-	}
 }
-
