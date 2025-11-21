@@ -19,7 +19,7 @@ protocol RecipeListViewOutput: AnyObject {
 	func search(query: String)
 	func retry()
 	func loadMore()
-	func openFavorites()
+	func showFavorites()
 }
 
 protocol RecipeListInteractorInput: AnyObject {

@@ -11,7 +11,7 @@ final class RecipeListViewController: UIViewController {
 	
 	var output: RecipeListViewOutput?
 	
-	var favoritesStore: FavoritesStore = FavoritesStoreImpl()
+	var favoritesStore: FavoritesStore!
 	private var favoriteIDs: Set<String> = []
 	private var favoritesObserver: NSObjectProtocol?
 	
@@ -78,15 +78,6 @@ final class RecipeListViewController: UIViewController {
 		title = Constants.title
 		navigationItem.largeTitleDisplayMode = .always
 		
-		let favoritesButton = UIBarButtonItem(
-			image: UIImage(systemName: "star"),
-			style: .plain,
-			target: self,
-			action: #selector(didTapFavorites)
-		)
-		favoritesButton.tintColor = .systemYellow
-		navigationItem.rightBarButtonItem = favoritesButton
-		
 		searchController.searchResultsUpdater = self
 		searchController.obscuresBackgroundDuringPresentation = false
 		searchController.searchBar.autocapitalizationType = .none
@@ -94,15 +85,21 @@ final class RecipeListViewController: UIViewController {
 		navigationItem.searchController = searchController
 		definesPresentationContext = true
 		
+		let favoritesButton = UIBarButtonItem(
+			image: UIImage(systemName: "star"),
+			style: .plain,
+			target: self,
+			action: #selector(didTapFavorites)
+		)
+		favoritesButton.accessibilityLabel = "Favorites"
+		navigationItem.rightBarButtonItem = favoritesButton
+		
 		collectionView.translatesAutoresizingMaskIntoConstraints = false
 		collectionView.backgroundColor = .clear
 		collectionView.dataSource = self
 		collectionView.delegate = self
 		collectionView.prefetchDataSource = self
-		collectionView.register(
-			RecipeCardCell.self,
-			forCellWithReuseIdentifier: RecipeCardCell.reuseId
-		)
+		collectionView.register(RecipeCardCell.self, forCellWithReuseIdentifier: RecipeCardCell.reuseId)
 		
 		stateView.translatesAutoresizingMaskIntoConstraints = false
 		stateView.isHidden = true
@@ -127,18 +124,31 @@ final class RecipeListViewController: UIViewController {
 	}
 	
 	@objc private func didTapFavorites() {
-		output?.openFavorites()
+		output?.showFavorites()
 	}
 	
 	private func setupFavorites() {
+		guard let favoritesStore else {
+			assertionFailure("favoritesStore must be injected via assembly before viewDidLoad")
+			return
+		}
+		
 		Task { [weak self] in
 			guard let self else { return }
 			do {
 				let items = try await favoritesStore.fetchAll()
 				let ids = Set(items.map(\.id))
 				await MainActor.run {
+					let oldIDs = self.favoriteIDs
 					self.favoriteIDs = ids
-					self.collectionView.reloadData()
+					guard !self.items.isEmpty else { return }
+					let changed = oldIDs.symmetricDifference(ids)
+					let indexPaths = self.items.enumerated().compactMap { offset, vm in
+						changed.contains(vm.id) ? IndexPath(item: offset, section: 0) : nil
+					}
+					if !indexPaths.isEmpty {
+						self.collectionView.reloadItems(at: indexPaths)
+					}
 				}
 			} catch {
 			}
@@ -153,11 +163,19 @@ final class RecipeListViewController: UIViewController {
 			Task { [weak self] in
 				guard let self else { return }
 				do {
-					let items = try await self.favoritesStore.fetchAll()
+					let items = try await favoritesStore.fetchAll()
 					let ids = Set(items.map(\.id))
 					await MainActor.run {
+						let oldIDs = self.favoriteIDs
 						self.favoriteIDs = ids
-						self.collectionView.reloadData()
+						guard !self.items.isEmpty else { return }
+						let changed = oldIDs.symmetricDifference(ids)
+						let indexPaths = self.items.enumerated().compactMap { offset, vm in
+							changed.contains(vm.id) ? IndexPath(item: offset, section: 0) : nil
+						}
+						if !indexPaths.isEmpty {
+							self.collectionView.reloadItems(at: indexPaths)
+						}
 					}
 				} catch { }
 			}
@@ -266,7 +284,7 @@ extension RecipeListViewController: UICollectionViewDataSource {
 		imageTasks[indexPath] = nil
 		
 		cell.onToggleFavorite = { [weak self, weak collectionView] in
-			guard let self else { return }
+			guard let self, let favoritesStore = self.favoritesStore else { return }
 			let favoriteItem = FavoriteItem(
 				id: vm.id,
 				title: vm.title,
@@ -277,7 +295,7 @@ extension RecipeListViewController: UICollectionViewDataSource {
 			Task { [weak self, weak collectionView] in
 				guard let self else { return }
 				do {
-					let nowFavorite = try await self.favoritesStore.toggle(item: favoriteItem)
+					let nowFavorite = try await favoritesStore.toggle(item: favoriteItem)
 					await MainActor.run {
 						if nowFavorite {
 							self.favoriteIDs.insert(vm.id)

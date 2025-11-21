@@ -67,8 +67,8 @@ extension RecipeListPresenter: RecipeListViewOutput {
 	
 	func didSelectItem(at index: Int) {
 		guard index >= 0, index < viewModels.count else { return }
-		let viewModels = viewModels[index]
-		router.routeToDetails(mealId: viewModels.id)
+		let viewModel = viewModels[index]
+		router.routeToDetails(mealId: viewModel.id)
 	}
 	
 	func refresh() {
@@ -142,7 +142,7 @@ extension RecipeListPresenter: RecipeListViewOutput {
 		}
 	}
 	
-	func openFavorites() {
+	func showFavorites() {
 		router.routeToFavorites()
 	}
 }
@@ -191,3 +191,4 @@ extension RecipeListPresenter: RecipeListInteractorOutput {
 		view?.showError(message: error.localizedDescription)
 	}
 }
+

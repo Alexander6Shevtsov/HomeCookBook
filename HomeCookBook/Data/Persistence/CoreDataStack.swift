@@ -27,24 +27,26 @@ final class CoreDataStack {
 		container = NSPersistentContainer(name: "HomeCookBookModel", managedObjectModel: model)
 		
 		let storeURL: URL = {
-			let fm = FileManager.default
-			let appSupport = try? fm.url(
+			let fileManager = FileManager.default
+			let appSupport = try? fileManager.url(
 				for: .applicationSupportDirectory,
 				in: .userDomainMask,
 				appropriateFor: nil,
 				create: true
 			)
-			let dir = appSupport ?? fm.urls(for: .documentDirectory, in: .userDomainMask).first!
-			let folder = dir.appendingPathComponent("HomeCookBook", isDirectory: true)
-			try? fm.createDirectory(at: folder, withIntermediateDirectories: true)
+			let directory = appSupport ?? fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+			let folder = directory.appendingPathComponent("HomeCookBook", isDirectory: true)
+			try? fileManager.createDirectory(at: folder, withIntermediateDirectories: true)
 			return folder.appendingPathComponent("HomeCookBook.sqlite")
 		}()
 		
-		let desc = NSPersistentStoreDescription(url: storeURL)
-		desc.type = NSSQLiteStoreType
-		desc.shouldAddStoreAsynchronously = false
-		container.persistentStoreDescriptions = [desc]
+		let description = NSPersistentStoreDescription(url: storeURL)
+		description.type = NSSQLiteStoreType
+		description.shouldAddStoreAsynchronously = false
+		description.shouldMigrateStoreAutomatically = true
+		description.shouldInferMappingModelAutomatically = true
 		
+		container.persistentStoreDescriptions = [description]
 		container.loadPersistentStores { _, error in
 			if let error {
 				assertionFailure("Core Data store loading error: \(error)")
