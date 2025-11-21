@@ -234,7 +234,10 @@ final class RecipeListViewController: UIViewController {
 			}
 			
 			if let idx = self.items.firstIndex(where: { $0.id == id }) {
-				self.collectionView.reloadItems(at: [IndexPath(item: idx, section: 0)])
+				let indexPath = IndexPath(item: idx, section: 0)
+				if let cell = self.collectionView.cellForItem(at: indexPath) as? RecipeCardCell {
+					cell.setFavorite(isFav)
+				}
 			}
 		}
 	}
@@ -356,11 +359,14 @@ extension RecipeListViewController: UICollectionViewDataSource {
 				thumbnailURL: vm.thumbnailURL,
 				dateAdded: Date()
 			)
+			
+			self.markRecentlyChanged(vm.id)
+			
 			Task { [weak self, weak collectionView] in
 				guard let self else { return }
 				do {
 					let nowFavorite = try await favoritesStore.toggle(item: favoriteItem)
-					await MainActor.run {
+					_ = await MainActor.run {
 						if nowFavorite {
 							self.favoriteIDs.insert(vm.id)
 						} else {
@@ -368,11 +374,13 @@ extension RecipeListViewController: UICollectionViewDataSource {
 						}
 						if let collectionView,
 						   let visibleCell = collectionView.cellForItem(at: indexPath) as? RecipeCardCell {
-							visibleCell.configure(title: vm.title, subtitle: vm.subtitle, isFavorite: nowFavorite)
+							visibleCell.setFavorite(nowFavorite)
 						}
-						self.markRecentlyChanged(vm.id)
 					}
 				} catch {
+					_ = await MainActor.run { [weak self] in
+						self?.recentlyChangedFavoriteIDs.remove(vm.id)
+					}
 				}
 			}
 		}
@@ -637,3 +645,4 @@ private final class StateOverlayView: UIView {
 		onRetry?()
 	}
 }
+

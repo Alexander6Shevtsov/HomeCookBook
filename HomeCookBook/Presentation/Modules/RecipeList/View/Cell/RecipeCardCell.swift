@@ -148,6 +148,11 @@ final class RecipeCardCell: UICollectionViewCell {
 		updateFavoriteAppearance()
 	}
 	
+	func setFavorite(_ isFavorite: Bool) {
+		self.isFavorite = isFavorite
+		updateFavoriteAppearance()
+	}
+	
 	func setPlaceholder() {
 		imageView.image = UIImage(systemName: "photo")
 		imageView.tintColor = .tertiaryLabel
@@ -171,3 +176,4 @@ final class RecipeCardCell: UICollectionViewCell {
 		onToggleFavorite?()
 	}
 }
+
