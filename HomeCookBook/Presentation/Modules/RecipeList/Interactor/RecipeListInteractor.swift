@@ -28,18 +28,14 @@ final class RecipeListInteractor: RecipeListInteractorInput {
 	func loadInitial() {
 		currentLetterIndex = 0
 		startNewTask {
-			let letter = self.letters[self.currentLetterIndex ?? 0]
-			let items = try await self.service.fetch(firstLetter: letter)
-			await MainActor.run { self.output?.didLoad(items: items) }
+			try await self.fetchFirstNonEmpty(startingAt: 0, replace: true)
 		}
 	}
 	
 	func refresh() {
 		currentLetterIndex = 0
 		startNewTask {
-			let letter = self.letters[self.currentLetterIndex ?? 0]
-			let items = try await self.service.fetch(firstLetter: letter)
-			await MainActor.run { self.output?.didLoad(items: items) }
+			try await self.fetchFirstNonEmpty(startingAt: 0, replace: true)
 		}
 	}
 	
@@ -75,11 +71,8 @@ final class RecipeListInteractor: RecipeListInteractorInput {
 			}
 			return
 		}
-		currentLetterIndex = next
 		startNewTask {
-			let letter = self.letters[next]
-			let items = try await self.service.fetch(firstLetter: letter)
-			await MainActor.run { self.output?.didLoadMore(items: items) }
+			try await self.fetchFirstNonEmpty(startingAt: next, replace: false)
 		}
 	}
 	
@@ -92,6 +85,34 @@ final class RecipeListInteractor: RecipeListInteractorInput {
 			} catch {
 				guard !Task.isCancelled else { return }
 				await MainActor.run { self.output?.didFailToLoad(error: error) }
+			}
+		}
+	}
+	
+	private func fetchFirstNonEmpty(startingAt start: Int, replace: Bool) async throws {
+		var idx = start
+		while idx < letters.count {
+			let letter = letters[idx]
+			let items = try await service.fetch(firstLetter: letter)
+			if !items.isEmpty {
+				await MainActor.run {
+					if replace {
+						self.output?.didLoad(items: items)
+					} else {
+						self.output?.didLoadMore(items: items)
+					}
+				}
+				self.currentLetterIndex = idx
+				return
+			}
+			idx += 1
+			if Task.isCancelled { return }
+		}
+		await MainActor.run {
+			if replace {
+				self.output?.didLoad(items: [])
+			} else {
+				self.output?.didLoadMore(items: [])
 			}
 		}
 	}

@@ -11,6 +11,8 @@ enum RecipeDetailAssembly {
 	static func build(
 		mealId: String,
 		initialTitle: String?,
+		initialImageURL: URL?,
+		initialImage: UIImage?,
 		service: MealsService,
 		favoritesStore: FavoritesStore
 	) -> UIViewController {
@@ -18,7 +20,8 @@ enum RecipeDetailAssembly {
 		view.mealId = mealId
 		view.favoritesStore = favoritesStore
 		view.initialTitle = initialTitle
-		view.title = initialTitle ?? "Recipe"
+		view.initialImageURL = initialImageURL
+		view.initialImage = initialImage
 		
 		let router = RecipeDetailRouter(viewController: view)
 		let interactor = RecipeDetailInteractor(mealId: mealId, service: service, output: nil)
@@ -33,3 +36,4 @@ enum RecipeDetailAssembly {
 		return view
 	}
 }
+

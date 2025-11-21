@@ -8,7 +8,7 @@
 import Foundation
 import CoreData
 
-struct FavoriteItem: Equatable {
+struct FavoriteItem: Equatable, Sendable {
 	let id: String
 	let title: String
 	let subtitle: String?
@@ -18,6 +18,12 @@ struct FavoriteItem: Equatable {
 
 extension Notification.Name {
 	static let favoritesDidChange = Notification.Name("favoritesDidChange")
+}
+
+enum FavoritesNotification {
+	static let idKey = "id"
+	static let isFavoriteKey = "isFavorite"
+	static let itemKey = "item"
 }
 
 protocol FavoritesStore: AnyObject {
@@ -64,26 +70,29 @@ final actor FavoritesStoreImpl: FavoritesStore {
 			managedObject.thumbnailURL = item.thumbnailURL?.absoluteString
 			managedObject.dateAdded = item.dateAdded
 			try self.backgroundContext.save()
-			self.postChange()
 		}
+		await self.postChange(id: item.id, isFavorite: true, item: item)
 	}
 	
 	func remove(id: String) async throws {
-		try await backgroundContext.perform {
+		let didDelete: Bool = try await backgroundContext.perform {
 			if let managedObject = try Self.fetchFavoriteRecipeObject(id: id, in: self.backgroundContext) {
 				self.backgroundContext.delete(managedObject)
 				try self.backgroundContext.save()
-				self.postChange()
+				return true
 			}
+			return false
+		}
+		if didDelete {
+			await self.postChange(id: id, isFavorite: false, item: nil)
 		}
 	}
 	
 	func toggle(item: FavoriteItem) async throws -> Bool {
-		try await backgroundContext.perform {
+		let isNowFavorite: Bool = try await backgroundContext.perform {
 			if let managedObject = try Self.fetchFavoriteRecipeObject(id: item.id, in: self.backgroundContext) {
 				self.backgroundContext.delete(managedObject)
 				try self.backgroundContext.save()
-				self.postChange()
 				return false
 			} else {
 				let managedObject = FavoriteRecipeMO(context: self.backgroundContext)
@@ -93,10 +102,11 @@ final actor FavoritesStoreImpl: FavoritesStore {
 				managedObject.thumbnailURL = item.thumbnailURL?.absoluteString
 				managedObject.dateAdded = item.dateAdded
 				try self.backgroundContext.save()
-				self.postChange()
 				return true
 			}
 		}
+		await self.postChange(id: item.id, isFavorite: isNowFavorite, item: isNowFavorite ? item : nil)
+		return isNowFavorite
 	}
 	
 	func fetchAll() async throws -> [FavoriteItem] {
@@ -116,16 +126,28 @@ final actor FavoritesStoreImpl: FavoritesStore {
 		}
 	}
 	
-	private static func fetchFavoriteRecipeObject(id: String, in context: NSManagedObjectContext) throws -> FavoriteRecipeMO? {
+	private static func fetchFavoriteRecipeObject(
+		id: String,
+		in context: NSManagedObjectContext
+	) throws -> FavoriteRecipeMO? {
 		let request = NSFetchRequest<FavoriteRecipeMO>(entityName: "FavoriteRecipe")
 		request.fetchLimit = 1
 		request.predicate = NSPredicate(format: "id == %@", id)
 		return try context.fetch(request).first
 	}
 	
-	private nonisolated func postChange() {
-		DispatchQueue.main.async {
-			NotificationCenter.default.post(name: .favoritesDidChange, object: nil)
-		}
+	@MainActor
+	private func postChange(id: String, isFavorite: Bool, item: FavoriteItem?) {
+		let userInfo: [AnyHashable: Any] = {
+			var dict: [AnyHashable: Any] = [
+				FavoritesNotification.idKey: id,
+				FavoritesNotification.isFavoriteKey: isFavorite
+			]
+			if let item {
+				dict[FavoritesNotification.itemKey] = item
+			}
+			return dict
+		}()
+		NotificationCenter.default.post(name: .favoritesDidChange, object: nil, userInfo: userInfo)
 	}
 }

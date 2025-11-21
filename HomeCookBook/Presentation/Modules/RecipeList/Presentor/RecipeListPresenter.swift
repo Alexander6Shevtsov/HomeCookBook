@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import UIKit
 
 final class RecipeListPresenter {
 	
@@ -65,10 +66,15 @@ extension RecipeListPresenter: RecipeListViewOutput {
 		interactor.loadInitial()
 	}
 	
-	func didSelectItem(at index: Int) {
+	func didSelectItem(at index: Int, previewImage: UIImage?) {
 		guard index >= 0, index < viewModels.count else { return }
-		let viewModel = viewModels[index]
-		router.routeToDetails(mealId: viewModel.id, initialTitle: viewModel.title)
+		let vm = viewModels[index]
+		router.routeToDetails(
+			mealId: vm.id,
+			initialTitle: vm.title,
+			initialImageURL: vm.thumbnailURL,
+			initialImage: previewImage
+		)
 	}
 	
 	func refresh() {
@@ -191,3 +197,4 @@ extension RecipeListPresenter: RecipeListInteractorOutput {
 		view?.showError(message: error.localizedDescription)
 	}
 }
+

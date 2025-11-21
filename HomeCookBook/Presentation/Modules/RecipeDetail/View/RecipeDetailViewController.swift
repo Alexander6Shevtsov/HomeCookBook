@@ -13,10 +13,17 @@ final class RecipeDetailViewController: UIViewController {
 	
 	var favoritesStore: FavoritesStore = FavoritesStoreImpl()
 	var mealId: String = ""
-	var initialTitle: String? 
+	var initialTitle: String?
+	var initialImageURL: URL?
+	var initialImage: UIImage?
 	
+	private let scrollView = UIScrollView()
+	private let contentStack = UIStackView()
+	
+	private let titleLabel = UILabel()
 	private let imageView = UIImageView()
-	private let textView = UITextView()
+	private let instructionsLabel = UILabel()
+	
 	private let imageLoader = ImageLoader.shared
 	private var imageTask: Task<Void, Never>?
 	
@@ -31,9 +38,12 @@ final class RecipeDetailViewController: UIViewController {
 	private var favoriteBarButtonItem: UIBarButtonItem!
 	private var isFavorite: Bool = false
 	private var favoritesObserver: NSObjectProtocol?
+	private var recentlyChangedFavoriteIDs: Set<String> = []
+	
+	private var currentTitleText: String?
 	
 	private enum Constants {
-		static let title = "Recipe"
+		static let fallbackTitle = "Recipe"
 		static let spacing: CGFloat = 12
 		static let imageHeight: CGFloat = 220
 	}
@@ -54,34 +64,73 @@ final class RecipeDetailViewController: UIViewController {
 	
 	private func setupUI() {
 		view.backgroundColor = .systemBackground
-		title = initialTitle ?? Constants.title
 		
-		imageView.translatesAutoresizingMaskIntoConstraints = false
+		navigationItem.largeTitleDisplayMode = .never
+		navigationItem.title = nil
+		
+		scrollView.translatesAutoresizingMaskIntoConstraints = false
+		scrollView.alwaysBounceVertical = true
+		
+		contentStack.translatesAutoresizingMaskIntoConstraints = false
+		contentStack.axis = .vertical
+		contentStack.alignment = .fill
+		contentStack.distribution = .fill
+		contentStack.spacing = Constants.spacing
+		contentStack.isLayoutMarginsRelativeArrangement = true
+		contentStack.layoutMargins = UIEdgeInsets(
+			top: Constants.spacing,
+			left: Constants.spacing,
+			bottom: Constants.spacing,
+			right: Constants.spacing
+		)
+		
+		titleLabel.numberOfLines = 0
+		titleLabel.textColor = .label
+		titleLabel.font = UIFont.preferredFont(forTextStyle: .largeTitle)
+		titleLabel.adjustsFontForContentSizeCategory = true
+		titleLabel.text = initialTitle ?? Constants.fallbackTitle
+		currentTitleText = titleLabel.text
+		
 		imageView.contentMode = .scaleAspectFill
 		imageView.clipsToBounds = true
 		imageView.backgroundColor = .secondarySystemBackground
 		imageView.image = UIImage(systemName: "photo")
 		imageView.tintColor = .tertiaryLabel
+		imageView.heightAnchor.constraint(equalToConstant: Constants.imageHeight).isActive = true
 		
-		textView.translatesAutoresizingMaskIntoConstraints = false
-		textView.isEditable = false
-		textView.backgroundColor = .clear
-		textView.textColor = .label
-		textView.font = .preferredFont(forTextStyle: .body)
+		if let initialImage {
+			imageView.image = initialImage
+			imageView.tintColor = nil
+		}
+		else if let url = initialImageURL, let cached = imageLoader.cachedImage(for: url) {
+			imageView.image = cached
+			imageView.tintColor = nil
+		}
 		
-		view.addSubview(imageView)
-		view.addSubview(textView)
+		instructionsLabel.numberOfLines = 0
+		instructionsLabel.textColor = .label
+		instructionsLabel.font = .preferredFont(forTextStyle: .body)
+		instructionsLabel.adjustsFontForContentSizeCategory = true
+		
+		view.addSubview(scrollView)
+		scrollView.addSubview(contentStack)
+		
+		contentStack.addArrangedSubview(titleLabel)
+		contentStack.addArrangedSubview(imageView)
+		contentStack.addArrangedSubview(instructionsLabel)
 		
 		NSLayoutConstraint.activate([
-			imageView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: Constants.spacing),
-			imageView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: Constants.spacing),
-			imageView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -Constants.spacing),
-			imageView.heightAnchor.constraint(equalToConstant: Constants.imageHeight),
+			scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+			scrollView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+			scrollView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+			scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 			
-			textView.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: Constants.spacing),
-			textView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: Constants.spacing),
-			textView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -Constants.spacing),
-			textView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+			contentStack.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
+			contentStack.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
+			contentStack.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
+			contentStack.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
+			
+			contentStack.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor)
 		])
 		
 		activityIndicator.stopAnimating()
@@ -112,16 +161,18 @@ final class RecipeDetailViewController: UIViewController {
 			forName: .favoritesDidChange,
 			object: nil,
 			queue: .main
-		) { [weak self] _ in
+		) { [weak self] note in
 			guard let self else { return }
-			Task { [weak self] in
-				guard let self else { return }
-				let isFav = await self.favoritesStore.isFavorite(id: self.mealId)
-				await MainActor.run {
-					self.isFavorite = isFav
-					self.updateFavoriteBarButton()
-				}
-			}
+			guard
+				let id = note.userInfo?[FavoritesNotification.idKey] as? String,
+				let isFav = note.userInfo?[FavoritesNotification.isFavoriteKey] as? Bool
+			else { return }
+			guard id == self.mealId else { return }
+			
+			if self.recentlyChangedFavoriteIDs.contains(id) { return }
+			
+			self.isFavorite = isFav
+			self.updateFavoriteBarButton()
 		}
 	}
 	
@@ -130,10 +181,17 @@ final class RecipeDetailViewController: UIViewController {
 		favoriteBarButtonItem.image = UIImage(systemName: imageName)
 	}
 	
+	private func markRecentlyChanged(_ id: String) {
+		recentlyChangedFavoriteIDs.insert(id)
+		DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+			self?.recentlyChangedFavoriteIDs.remove(id)
+		}
+	}
+	
 	@objc private func didTapFavorite() {
 		let favorite = FavoriteItem(
 			id: mealId,
-			title: title ?? "",
+			title: currentTitleText ?? "",
 			subtitle: nil,
 			thumbnailURL: nil,
 			dateAdded: Date()
@@ -145,6 +203,7 @@ final class RecipeDetailViewController: UIViewController {
 				await MainActor.run {
 					self.isFavorite = nowFavorite
 					self.updateFavoriteBarButton()
+					self.markRecentlyChanged(self.mealId)
 				}
 			} catch {
 			}
@@ -154,11 +213,16 @@ final class RecipeDetailViewController: UIViewController {
 
 extension RecipeDetailViewController: RecipeDetailViewInput {
 	func display(title: String, imageURL: URL?, instructions: String) {
-		self.title = title
-		textView.text = instructions
+		self.currentTitleText = title
+		self.titleLabel.text = title
+		self.instructionsLabel.text = instructions
 		
 		imageTask?.cancel()
 		imageTask = nil
+		
+		if initialImage != nil {
+			return
+		}
 		
 		if let url = imageURL, let cached = imageLoader.cachedImage(for: url) {
 			imageView.image = cached
@@ -188,7 +252,7 @@ extension RecipeDetailViewController: RecipeDetailViewInput {
 		if isLoading {
 			spinnerDelayTask?.cancel()
 			spinnerDelayTask = Task { [weak self] in
-				try? await Task.sleep(nanoseconds: 200_000_000) 
+				try? await Task.sleep(nanoseconds: 200_000_000)
 				guard let self, !Task.isCancelled else { return }
 				await MainActor.run { self.activityIndicator.startAnimating() }
 			}
@@ -205,3 +269,4 @@ extension RecipeDetailViewController: RecipeDetailViewInput {
 		present(alert, animated: true)
 	}
 }
+

@@ -14,7 +14,7 @@ protocol RecipeListViewInput: AnyObject {
 
 protocol RecipeListViewOutput: AnyObject {
 	func viewDidLoad()
-	func didSelectItem(at index: Int)
+	func didSelectItem(at index: Int, previewImage: UIImage?)
 	func refresh()
 	func search(query: String)
 	func retry()
@@ -36,6 +36,12 @@ protocol RecipeListInteractorOutput: AnyObject {
 }
 
 protocol RecipeListRouterInput: AnyObject {
-	func routeToDetails(mealId: String, initialTitle: String?)
+	func routeToDetails(
+		mealId: String,
+		initialTitle: String?,
+		initialImageURL: URL?,
+		initialImage: UIImage?
+	)
 	func routeToFavorites()
 }
+

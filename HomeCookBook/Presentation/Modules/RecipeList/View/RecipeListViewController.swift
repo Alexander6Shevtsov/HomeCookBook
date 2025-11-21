@@ -14,6 +14,7 @@ final class RecipeListViewController: UIViewController {
 	var favoritesStore: FavoritesStore!
 	private var favoriteIDs: Set<String> = []
 	private var favoritesObserver: NSObjectProtocol?
+	private var recentlyChangedFavoriteIDs: Set<String> = []
 	
 	private let collectionView: UICollectionView
 	private let searchController = UISearchController(searchResultsController: nil)
@@ -139,16 +140,8 @@ final class RecipeListViewController: UIViewController {
 				let items = try await favoritesStore.fetchAll()
 				let ids = Set(items.map(\.id))
 				await MainActor.run {
-					let oldIDs = self.favoriteIDs
 					self.favoriteIDs = ids
-					guard !self.items.isEmpty else { return }
-					let changed = oldIDs.symmetricDifference(ids)
-					let indexPaths = self.items.enumerated().compactMap { offset, vm in
-						changed.contains(vm.id) ? IndexPath(item: offset, section: 0) : nil
-					}
-					if !indexPaths.isEmpty {
-						self.collectionView.reloadItems(at: indexPaths)
-					}
+					self.collectionView.reloadData()
 				}
 			} catch {
 			}
@@ -158,27 +151,31 @@ final class RecipeListViewController: UIViewController {
 			forName: .favoritesDidChange,
 			object: nil,
 			queue: .main
-		) { [weak self] _ in
+		) { [weak self] note in
 			guard let self else { return }
-			Task { [weak self] in
-				guard let self else { return }
-				do {
-					let items = try await favoritesStore.fetchAll()
-					let ids = Set(items.map(\.id))
-					await MainActor.run {
-						let oldIDs = self.favoriteIDs
-						self.favoriteIDs = ids
-						guard !self.items.isEmpty else { return }
-						let changed = oldIDs.symmetricDifference(ids)
-						let indexPaths = self.items.enumerated().compactMap { offset, vm in
-							changed.contains(vm.id) ? IndexPath(item: offset, section: 0) : nil
-						}
-						if !indexPaths.isEmpty {
-							self.collectionView.reloadItems(at: indexPaths)
-						}
-					}
-				} catch { }
+			guard
+				let id = note.userInfo?[FavoritesNotification.idKey] as? String,
+				let isFav = note.userInfo?[FavoritesNotification.isFavoriteKey] as? Bool
+			else { return }
+			
+			if self.recentlyChangedFavoriteIDs.contains(id) { return }
+			
+			if isFav {
+				self.favoriteIDs.insert(id)
+			} else {
+				self.favoriteIDs.remove(id)
 			}
+			
+			if let idx = self.items.firstIndex(where: { $0.id == id }) {
+				self.collectionView.reloadItems(at: [IndexPath(item: idx, section: 0)])
+			}
+		}
+	}
+	
+	private func markRecentlyChanged(_ id: String) {
+		recentlyChangedFavoriteIDs.insert(id)
+		DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+			self?.recentlyChangedFavoriteIDs.remove(id)
 		}
 	}
 	
@@ -306,6 +303,7 @@ extension RecipeListViewController: UICollectionViewDataSource {
 						   let visibleCell = collectionView.cellForItem(at: indexPath) as? RecipeCardCell {
 							visibleCell.configure(title: vm.title, subtitle: vm.subtitle, isFavorite: nowFavorite)
 						}
+						self.markRecentlyChanged(vm.id)
 					}
 				} catch {
 				}
@@ -351,7 +349,9 @@ extension RecipeListViewController: UICollectionViewDelegate {
 		_ collectionView: UICollectionView,
 		didSelectItemAt indexPath: IndexPath
 	) {
-		output?.didSelectItem(at: indexPath.item)
+		let vm = items[indexPath.item]
+		let preview = vm.thumbnailURL.flatMap { imageLoader.cachedImage(for: $0) }
+		output?.didSelectItem(at: indexPath.item, previewImage: preview)
 		collectionView.deselectItem(at: indexPath, animated: true)
 	}
 	
@@ -548,3 +548,4 @@ private final class StateOverlayView: UIView {
 		onRetry?()
 	}
 }
+
