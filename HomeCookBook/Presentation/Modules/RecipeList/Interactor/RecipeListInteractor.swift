@@ -46,8 +46,23 @@ final class RecipeListInteractor: RecipeListInteractorInput {
 	func search(query: String) {
 		currentLetterIndex = nil
 		startNewTask {
-			let items = try await self.service.fetch(query: query)
-			await MainActor.run { self.output?.didLoad(items: items) }
+			let byName = try await self.service.fetch(query: query)
+			if !byName.isEmpty {
+				await MainActor.run { self.output?.didLoad(items: byName) }
+				return
+			}
+			let byCategory = try await self.service.fetch(category: query)
+			if !byCategory.isEmpty {
+				await MainActor.run { self.output?.didLoad(items: byCategory) }
+				return
+			}
+			let capitalized = query.capitalized
+			if capitalized != query {
+				let byCategoryCap = try await self.service.fetch(category: capitalized)
+				await MainActor.run { self.output?.didLoad(items: byCategoryCap) }
+			} else {
+				await MainActor.run { self.output?.didLoad(items: []) }
+			}
 		}
 	}
 	

@@ -11,6 +11,7 @@ protocol MealsService {
 	func fetchInitial() async throws -> [RecipeListItemEntity]
 	func fetch(query: String) async throws -> [RecipeListItemEntity]
 	func fetch(firstLetter: Character) async throws -> [RecipeListItemEntity]
+	func fetch(category: String) async throws -> [RecipeListItemEntity]
 	func fetchDetails(id: String) async throws -> RecipeDetailEntity
 }
 
@@ -26,9 +27,9 @@ final class TheMealDBService: MealsService {
 	}
 	
 	func fetch(query: String) async throws -> [RecipeListItemEntity] {
-		var comps = URLComponents(string: "https://www.themealdb.com/api/json/v1/1/search.php")
-		comps?.queryItems = [URLQueryItem(name: "s", value: query)]
-		guard let url = comps?.url else { throw URLError(.badURL) }
+		var components = URLComponents(string: "https://www.themealdb.com/api/json/v1/1/search.php")
+		components?.queryItems = [URLQueryItem(name: "s", value: query)]
+		guard let url = components?.url else { throw URLError(.badURL) }
 		
 		let response: MealSearchResponseDTO = try await client.get(url)
 		let meals = response.meals ?? []
@@ -59,6 +60,23 @@ final class TheMealDBService: MealsService {
 		}
 	}
 	
+	func fetch(category: String) async throws -> [RecipeListItemEntity] {
+		var comps = URLComponents(string: "https://www.themealdb.com/api/json/v1/1/filter.php")
+		comps?.queryItems = [URLQueryItem(name: "c", value: category)]
+		guard let url = comps?.url else { throw URLError(.badURL) }
+		
+		let response: MealFilterResponseDTO = try await client.get(url)
+		let meals = response.meals ?? []
+		return meals.map { dto in
+			RecipeListItemEntity(
+				id: dto.idMeal,
+				name: dto.strMeal,
+				category: category,
+				thumbnailURL: dto.strMealThumb.flatMap(URL.init(string:))
+			)
+		}
+	}
+	
 	func fetchDetails(id: String) async throws -> RecipeDetailEntity {
 		guard let url = URL(string: "https://www.themealdb.com/api/json/v1/1/lookup.php?i=\(id)") else {
 			throw URLError(.badURL)
@@ -74,5 +92,15 @@ final class TheMealDBService: MealsService {
 			instructions: dto.strInstructions ?? ""
 		)
 	}
+}
+
+private struct MealFilterResponseDTO: Decodable {
+	let meals: [MealFilterItemDTO]?
+}
+
+private struct MealFilterItemDTO: Decodable {
+	let idMeal: String
+	let strMeal: String
+	let strMealThumb: String?
 }
 
