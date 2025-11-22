@@ -98,14 +98,12 @@ final class FavoritesListViewController: UIViewController {
 	}
 	
 	private func markRecentlyChanged(_ id: String) {
-		weak var weakSelf = self
-		_ = Task.detached {
+		Task { [weak self] in
 			try? await Task.sleep(
 				nanoseconds: UInt64(Constants.recentlyChangedWindow * 1_000_000_000)
 			)
 			await MainActor.run {
-				guard let self = weakSelf else { return }
-				self.recentlyChangedFavoriteIDs.remove(id)
+				_ = self?.recentlyChangedFavoriteIDs.remove(id)
 			}
 		}
 	}
@@ -116,14 +114,13 @@ final class FavoritesListViewController: UIViewController {
 	}
 	
 	private func reloadFavorites() {
-		_ = Task { [weak self] in
+		Task { [weak self] in
 			guard let self else { return }
-			if let fetched = try? await favoritesStore.fetchAll() {
-				await MainActor.run {
-					self.cancelAllImageTasks()
-					self.items = fetched
-					self.tableView.reloadData()
-				}
+			let fetched = try? await favoritesStore.fetchAll()
+			await MainActor.run {
+				self.cancelAllImageTasks()
+				self.items = fetched ?? []
+				self.tableView.reloadData()
 			}
 		}
 	}
@@ -132,6 +129,7 @@ final class FavoritesListViewController: UIViewController {
 		cfg.imageProperties.maximumSize = Constants.iconSizeCGSize
 		cfg.imageProperties.reservedLayoutSize = Constants.iconSizeCGSize
 		cfg.imageProperties.cornerRadius = Constants.iconCornerRadius
+		cfg.imageProperties.tintColor = .tertiaryLabel
 	}
 }
 
@@ -157,7 +155,6 @@ extension FavoritesListViewController: UITableViewDataSource {
 		content.secondaryText = item.subtitle
 		content.secondaryTextProperties.color = .secondaryLabel
 		configureImageProperties(&content)
-		content.imageProperties.tintColor = .tertiaryLabel
 		
 		imageTasks[indexPath]?.cancel()
 		imageTasks[indexPath] = nil
@@ -168,7 +165,6 @@ extension FavoritesListViewController: UITableViewDataSource {
 			if let cached = imageLoader.cachedImage(for: url) {
 				content.image = cached
 			} else {
-				let expectedId = item.id
 				let task = Task { [weak self, weak tableView] in
 					guard let self else { return }
 					if let image = try? await self.imageLoader.image(from: url) {
@@ -177,9 +173,7 @@ extension FavoritesListViewController: UITableViewDataSource {
 								let tableView,
 								let visibleCell = tableView.cellForRow(at: indexPath)
 							else { return }
-							guard indexPath.row < self.items.count,
-								  self.items[indexPath.row].id == expectedId
-							else { return }
+							guard indexPath.row < self.items.count else { return }
 							
 							if var cfg = visibleCell.contentConfiguration as? UIListContentConfiguration {
 								self.configureImageProperties(&cfg)
