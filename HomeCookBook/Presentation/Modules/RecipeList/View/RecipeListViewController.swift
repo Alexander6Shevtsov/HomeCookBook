@@ -28,7 +28,7 @@ final class RecipeListViewController: UIViewController {
 	
 	private let stateView = StateOverlayView()
 	
-	private var filterButton: UIBarButtonItem!
+	private var filterButton: UIBarButtonItem?
 	
 	private enum LayoutConstants {
 		static let sectionInset: CGFloat = 16
@@ -67,7 +67,6 @@ final class RecipeListViewController: UIViewController {
 		static let preheatExtraRows = 2
 		static let debounceSeconds: Double = 0.3
 		static let recentlyChangedWindow: TimeInterval = 1.0
-		static let regularWidthThreshold: CGFloat = 700
 	}
 	
 	init(favoritesStore: FavoritesStoreProtocol) {
@@ -175,10 +174,17 @@ final class RecipeListViewController: UIViewController {
 		])
 	}
 	
-	private func setFilterTitle(_ selected: String?) {
+	private func setFilterTitle(_ selectedCategory: String?) {
 		navigationItem.largeTitleDisplayMode = .never
-		let text = (selected?.isEmpty == false) ? selected! : TextConstants.allTitle
-		navigationItem.titleView = makeTitleLabel(text: text)
+		
+		let titleText: String
+		if let selectedCategory, selectedCategory.isEmpty == false {
+			titleText = selectedCategory
+		} else {
+			titleText = TextConstants.allTitle
+		}
+		
+		navigationItem.titleView = makeTitleLabel(text: titleText)
 	}
 	
 	private func makeTitleLabel(text: String) -> UILabel {
@@ -211,7 +217,7 @@ final class RecipeListViewController: UIViewController {
 			title: TextConstants.allTitle,
 			state: .on
 		) { [weak self] _ in
-			self?.filterButton.title = nil
+			self?.filterButton?.title = nil
 			self?.setFilterTitle(nil)
 			self?.output?.selectCategory(nil)
 		}
@@ -234,16 +240,12 @@ final class RecipeListViewController: UIViewController {
 	private func setupFavorites() {
 		Task { [weak self] in
 			guard let self else { return }
-			do {
-				let favoriteItems = try await favoritesStore.fetchAll()
+			if let favoriteItems = try? await favoritesStore.fetchAll() {
 				let favoriteIdentifiers = Set(favoriteItems.map(\.id))
 				await MainActor.run {
 					self.favoriteIDs = favoriteIdentifiers
 					self.collectionView.reloadData()
 				}
-				_ = await MainActor.run {
-				}
-			} catch {
 			}
 		}
 		
@@ -352,7 +354,7 @@ final class RecipeListViewController: UIViewController {
 	}
 	
 	private func preheatInitialImages() {
-		guard !items.isEmpty else { return }
+		if items.isEmpty { return }
 		let width = collectionView.bounds.width
 		let size = itemSize(for: width)
 		let columnsCount = columns(for: width)
@@ -360,8 +362,9 @@ final class RecipeListViewController: UIViewController {
 		let preheatRows = rowsOnScreen + BehaviorConstants.preheatExtraRows
 		let itemsToPreheatCount = min(items.count, preheatRows * columnsCount)
 		let urls = (0..<itemsToPreheatCount).compactMap { items[$0].thumbnailURL }
-		guard !urls.isEmpty else { return }
-		Task { await imageLoader.prefetch(urls: urls) }
+		if urls.isEmpty == false {
+			Task { await imageLoader.prefetch(urls: urls) }
+		}
 	}
 }
 
@@ -527,14 +530,15 @@ extension RecipeListViewController: UICollectionViewDataSourcePrefetching {
 			guard indexPath.item < items.count else { return nil }
 			return items[indexPath.item].thumbnailURL
 		}
-		guard !urls.isEmpty else { return }
+		guard urls.isEmpty == false else { return }
 		
 		Task { await imageLoader.prefetch(urls: urls) }
 		
-		guard !items.isEmpty else { return }
-		if let maxIndex = indexPaths.map(\.item).max(),
-		   maxIndex >= max(0, items.count - BehaviorConstants.prefetchThreshold) {
-			output?.loadMore()
+		if items.isEmpty == false {
+			if let maxIndex = indexPaths.map(\.item).max(),
+			   maxIndex >= max(0, items.count - BehaviorConstants.prefetchThreshold) {
+				output?.loadMore()
+			}
 		}
 	}
 	
@@ -546,7 +550,7 @@ extension RecipeListViewController: UICollectionViewDataSourcePrefetching {
 			guard indexPath.item < items.count else { return nil }
 			return items[indexPath.item].thumbnailURL
 		}
-		guard !urls.isEmpty else { return }
+		guard urls.isEmpty == false else { return }
 		
 		Task {
 			for url in urls {
@@ -598,7 +602,7 @@ extension RecipeListViewController: RecipeListViewInput {
 			title: TextConstants.allTitle,
 			state: selected == nil ? .on : .off
 		) { [weak self] _ in
-			self?.filterButton.title = nil
+			self?.filterButton?.title = nil
 			self?.setFilterTitle(nil)
 			self?.output?.selectCategory(nil)
 		}
@@ -606,7 +610,7 @@ extension RecipeListViewController: RecipeListViewInput {
 		let categoryActions: [UIAction] = categories.map { category in
 			let state: UIMenuElement.State = (category == selected) ? .on : .off
 			return UIAction(title: category, state: state) { [weak self] _ in
-				self?.filterButton.title = category
+				self?.filterButton?.title = category
 				self?.setFilterTitle(category)
 				self?.output?.selectCategory(category)
 			}
@@ -617,7 +621,7 @@ extension RecipeListViewController: RecipeListViewInput {
 			options: .singleSelection,
 			children: [allAction] + categoryActions
 		)
-		filterButton.menu = menu
+		filterButton?.menu = menu
 	}
 }
 
@@ -647,7 +651,7 @@ extension RecipeListViewController: UISearchResultsUpdating {
 		
 		searchTask = Task { [weak self] in
 			try? await Task.sleep(nanoseconds: debounceDelayNanoseconds)
-			guard !Task.isCancelled else { return }
+			if Task.isCancelled { return }
 			
 			_ = await MainActor.run { [weak self] in
 				guard let self else { return }
@@ -656,4 +660,3 @@ extension RecipeListViewController: UISearchResultsUpdating {
 		}
 	}
 }
-
