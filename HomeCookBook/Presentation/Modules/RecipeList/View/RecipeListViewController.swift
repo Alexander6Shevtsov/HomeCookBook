@@ -119,6 +119,7 @@ final class RecipeListViewController: UIViewController {
 		navigationItem.largeTitleDisplayMode = .always
 		
 		searchController.searchResultsUpdater = self
+		searchController.searchBar.delegate = self
 		searchController.obscuresBackgroundDuringPresentation = false
 		searchController.searchBar.autocapitalizationType = .none
 		searchController.searchBar.placeholder = TextConstants.searchPlaceholder
@@ -172,6 +173,17 @@ final class RecipeListViewController: UIViewController {
 			stateView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
 			stateView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
 		])
+	}
+	
+	private func animateNavigationBar(hidden: Bool) {
+		guard let navBar = navigationController?.navigationBar else { return }
+		let offset: CGFloat = hidden ? -10 : 0
+		let alpha: CGFloat = hidden ? 0 : 1
+		
+		UIView.animate(withDuration: 0.25, delay: 0, options: [.curveEaseInOut]) {
+			navBar.transform = CGAffineTransform(translationX: 0, y: offset)
+			navBar.alpha = alpha
+		}
 	}
 	
 	private func setFilterTitle(_ selectedCategory: String?) {
@@ -658,5 +670,15 @@ extension RecipeListViewController: UISearchResultsUpdating {
 				self.output?.search(query: searchQuery)
 			}
 		}
+	}
+}
+
+extension RecipeListViewController: UISearchBarDelegate {
+	func searchBarTextDidBeginEditing(_ searchBar: UISearchBar) {
+		animateNavigationBar(hidden: true)
+	}
+	
+	func searchBarTextDidEndEditing(_ searchBar: UISearchBar) {
+		animateNavigationBar(hidden: false)
 	}
 }
