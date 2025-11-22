@@ -34,6 +34,8 @@ protocol FavoritesStore: AnyObject {
 	func fetchAll() async throws -> [FavoriteItem]
 }
 
+typealias FavoritesStoreProtocol = FavoritesStore
+
 final actor FavoritesStoreImpl: FavoritesStore {
 	private let persistentContainer: NSPersistentContainer
 	private let backgroundContext: NSManagedObjectContext
@@ -63,7 +65,7 @@ final actor FavoritesStoreImpl: FavoritesStore {
 	func add(item: FavoriteItem) async throws {
 		try await backgroundContext.perform {
 			let managedObject = try Self.fetchFavoriteRecipeObject(id: item.id, in: self.backgroundContext)
-				?? FavoriteRecipeMO(context: self.backgroundContext)
+			?? FavoriteRecipeMO(context: self.backgroundContext)
 			managedObject.id = item.id
 			managedObject.title = item.title
 			managedObject.subtitle = item.subtitle
@@ -151,3 +153,4 @@ final actor FavoritesStoreImpl: FavoritesStore {
 		NotificationCenter.default.post(name: .favoritesDidChange, object: nil, userInfo: userInfo)
 	}
 }
+

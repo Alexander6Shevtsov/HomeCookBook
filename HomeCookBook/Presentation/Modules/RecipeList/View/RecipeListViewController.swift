@@ -11,7 +11,7 @@ final class RecipeListViewController: UIViewController {
 	
 	var output: RecipeListViewOutput?
 	
-	var favoritesStore: FavoritesStore!
+	private let favoritesStore: FavoritesStoreProtocol
 	private var favoriteIDs: Set<String> = []
 	private var favoritesObserver: NSObjectProtocol?
 	private var recentlyChangedFavoriteIDs: Set<String> = []
@@ -75,7 +75,7 @@ final class RecipeListViewController: UIViewController {
 		static let regularWidthThreshold: CGFloat = 700
 	}
 	
-	init() {
+	init(favoritesStore: FavoritesStoreProtocol) {
 		let layout = UICollectionViewFlowLayout()
 		layout.minimumInteritemSpacing = LayoutConstants.interItemSpacing
 		layout.minimumLineSpacing = LayoutConstants.lineSpacing
@@ -86,6 +86,7 @@ final class RecipeListViewController: UIViewController {
 			right: LayoutConstants.sectionInset
 		)
 		self.collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
+		self.favoritesStore = favoritesStore
 		super.init(nibName: nil, bundle: nil)
 	}
 	
@@ -222,8 +223,6 @@ final class RecipeListViewController: UIViewController {
 	}
 	
 	private func setupFavorites() {
-		guard let favoritesStore else { return }
-		
 		Task { [weak self] in
 			guard let self else { return }
 			do {
@@ -277,23 +276,19 @@ final class RecipeListViewController: UIViewController {
 	}
 	
 	private func columns(for width: CGFloat) -> Int {
-		if traitCollection.horizontalSizeClass == .regular,
-		   width > BehaviorConstants.regularWidthThreshold {
-			return 3
-		}
 		return 2
 	}
 	
 	private func itemSize(for width: CGFloat) -> CGSize {
 		let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout
 		let sectionInsets = layout?.sectionInset ?? .zero
-		let interitemSpacing = layout?.minimumInteritemSpacing ?? LayoutConstants.interItemSpacing
+		let interItemSpacing = layout?.minimumInteritemSpacing ?? LayoutConstants.interItemSpacing
 		
 		let columnsCount = CGFloat(columns(for: width))
 		let totalHorizontalSpacing =
 		sectionInsets.left
 		+ sectionInsets.right
-		+ interitemSpacing * max(0, columnsCount - 1)
+		+ interItemSpacing * max(0, columnsCount - 1)
 		
 		let itemWidth = max(0, (width - totalHorizontalSpacing) / columnsCount)
 		let imageHeight = itemWidth * LayoutConstants.imageAspectRatio
@@ -303,9 +298,9 @@ final class RecipeListViewController: UIViewController {
 		let titleHeight = titleLineHeight * CGFloat(LayoutConstants.titleLines)
 		let subtitleHeight = subtitleLineHeight * CGFloat(LayoutConstants.subtitleLines)
 		let verticalTextSpacing =
-			LayoutConstants.contentPadding
-			+ LayoutConstants.labelsSpacing
-			+ LayoutConstants.contentPadding
+		LayoutConstants.contentPadding
+		+ LayoutConstants.labelsSpacing
+		+ LayoutConstants.contentPadding
 		
 		let itemHeight = imageHeight + titleHeight + subtitleHeight + verticalTextSpacing
 		return CGSize(width: floor(itemWidth), height: ceil(itemHeight))
@@ -340,25 +335,14 @@ final class RecipeListViewController: UIViewController {
 		stateView.isHidden = true
 	}
 	
-	override func viewWillTransition(
-		to size: CGSize,
-		with coordinator: UIViewControllerTransitionCoordinator
-	) {
-		super.viewWillTransition(to: size, with: coordinator)
-		coordinator.animate(alongsideTransition: { [weak self] _ in
-			guard let self = self else { return }
-			(self.collectionView.collectionViewLayout as? UICollectionViewFlowLayout)?.invalidateLayout()
-		}, completion: nil)
-	}
-	
 	private func preheatInitialImages() {
 		guard !items.isEmpty else { return }
 		let width = collectionView.bounds.width
 		let size = itemSize(for: width)
-		let cols = columns(for: width)
+		let columnsCount = columns(for: width)
 		let rowsOnScreen = max(1, Int(ceil(collectionView.bounds.height / size.height)))
 		let preheatRows = rowsOnScreen + BehaviorConstants.preheatExtraRows
-		let count = min(items.count, preheatRows * cols)
+		let count = min(items.count, preheatRows * columnsCount)
 		let urls = (0..<count).compactMap { items[$0].thumbnailURL }
 		guard !urls.isEmpty else { return }
 		Task { await imageLoader.prefetch(urls: urls) }
@@ -397,7 +381,8 @@ extension RecipeListViewController: UICollectionViewDataSource {
 		imageTasks[indexPath] = nil
 		
 		cell.onToggleFavorite = { [weak self, weak collectionView] in
-			guard let self, let favoritesStore = self.favoritesStore else { return }
+			guard let self else { return }
+			let favoritesStore = self.favoritesStore
 			let favoriteItem = FavoriteItem(
 				id: itemViewModel.id,
 				title: itemViewModel.title,
@@ -594,12 +579,12 @@ extension RecipeListViewController: RecipeListViewInput {
 			self?.output?.selectCategory(nil)
 		}
 		
-		let categoryActions: [UIAction] = categories.map { cat in
-			let state: UIMenuElement.State = (cat == selected) ? .on : .off
-			return UIAction(title: cat, state: state) { [weak self] _ in
-				self?.filterButton.title = cat
-				self?.setFilterTitle(cat)
-				self?.output?.selectCategory(cat)
+		let categoryActions: [UIAction] = categories.map { category in
+			let state: UIMenuElement.State = (category == selected) ? .on : .off
+			return UIAction(title: category, state: state) { [weak self] _ in
+				self?.filterButton.title = category
+				self?.setFilterTitle(category)
+				self?.output?.selectCategory(category)
 			}
 		}
 		
@@ -630,3 +615,4 @@ extension RecipeListViewController: UISearchResultsUpdating {
 		}
 	}
 }
+
