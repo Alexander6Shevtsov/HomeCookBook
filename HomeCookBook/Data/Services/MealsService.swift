@@ -1,5 +1,5 @@
 //
-//  TheMealDBService.swift
+//  MealsService.swift
 //  HomeCookBook
 //
 //  Created by Alexander Shevtsov on 20.11.2025.
@@ -107,7 +107,7 @@ final class TheMealDBService: MealsService {
 		let items = response.meals ?? []
 		return items.map { $0.strCategory }
 	}
-		
+	
 	func fetchRandomSelection() async throws -> [RecipeListItemEntity] {
 		guard let url = URL(string: baseURL + "randomselection.php") else {
 			throw URLError(.badURL)

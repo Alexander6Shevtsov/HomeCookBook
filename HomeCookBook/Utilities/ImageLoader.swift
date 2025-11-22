@@ -162,7 +162,9 @@ actor ImageLoader {
 	private func saveImageToDisk(image: UIImage, for url: URL) async {
 		let path = pathForDiskCache(url: url)
 		if fileManager.fileExists(atPath: path.path) { return }
-		let data = image.pngData() ?? image.jpegData(compressionQuality: ImageLoaderConstants.jpegQuality)
+		let data = image.pngData() ?? image.jpegData(
+			compressionQuality: ImageLoaderConstants.jpegQuality
+		)
 		guard let data else { return }
 		try? data.write(to: path, options: [.atomic])
 	}
@@ -199,6 +201,10 @@ actor ImageLoader {
 		}
 		context.draw(cgImage, in: CGRect(origin: .zero, size: size))
 		guard let newCGImage = context.makeImage() else { return nil }
-		return UIImage(cgImage: newCGImage, scale: image.scale, orientation: image.imageOrientation)
+		return UIImage(
+			cgImage: newCGImage,
+			scale: image.scale,
+			orientation: image.imageOrientation
+		)
 	}
 }

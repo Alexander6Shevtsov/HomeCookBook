@@ -64,7 +64,10 @@ final actor FavoritesStoreImpl: FavoritesStore {
 	
 	func add(item: FavoriteItem) async throws {
 		try await backgroundContext.perform {
-			let managedObject = try Self.fetchFavoriteRecipeObject(id: item.id, in: self.backgroundContext)
+			let managedObject = try Self.fetchFavoriteRecipeObject(
+				id: item.id,
+				in: self.backgroundContext
+			)
 			?? FavoriteRecipeMO(context: self.backgroundContext)
 			managedObject.id = item.id
 			managedObject.title = item.title
@@ -78,7 +81,10 @@ final actor FavoritesStoreImpl: FavoritesStore {
 	
 	func remove(id: String) async throws {
 		let didDelete: Bool = try await backgroundContext.perform {
-			if let managedObject = try Self.fetchFavoriteRecipeObject(id: id, in: self.backgroundContext) {
+			if let managedObject = try Self.fetchFavoriteRecipeObject(
+				id: id,
+				in: self.backgroundContext
+			) {
 				self.backgroundContext.delete(managedObject)
 				try self.backgroundContext.save()
 				return true
@@ -92,7 +98,10 @@ final actor FavoritesStoreImpl: FavoritesStore {
 	
 	func toggle(item: FavoriteItem) async throws -> Bool {
 		let isNowFavorite: Bool = try await backgroundContext.perform {
-			if let managedObject = try Self.fetchFavoriteRecipeObject(id: item.id, in: self.backgroundContext) {
+			if let managedObject = try Self.fetchFavoriteRecipeObject(
+				id: item.id,
+				in: self.backgroundContext
+			) {
 				self.backgroundContext.delete(managedObject)
 				try self.backgroundContext.save()
 				return false
@@ -107,7 +116,11 @@ final actor FavoritesStoreImpl: FavoritesStore {
 				return true
 			}
 		}
-		await self.postChange(id: item.id, isFavorite: isNowFavorite, item: isNowFavorite ? item : nil)
+		await self.postChange(
+			id: item.id,
+			isFavorite: isNowFavorite,
+			item: isNowFavorite ? item : nil
+		)
 		return isNowFavorite
 	}
 	
@@ -150,7 +163,11 @@ final actor FavoritesStoreImpl: FavoritesStore {
 			}
 			return dict
 		}()
-		NotificationCenter.default.post(name: .favoritesDidChange, object: nil, userInfo: userInfo)
+		NotificationCenter.default.post(
+			name: .favoritesDidChange,
+			object: nil,
+			userInfo: userInfo
+		)
 	}
 }
 

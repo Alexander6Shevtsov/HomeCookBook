@@ -12,13 +12,22 @@ final class RecipeListRouter: RecipeListRouterInput {
 	private let service: MealsService
 	private let favoritesStore: FavoritesStore
 	
-	init(viewController: UIViewController, service: MealsService, favoritesStore: FavoritesStore) {
+	init(
+		viewController: UIViewController,
+		service: MealsService,
+		favoritesStore: FavoritesStore
+	) {
 		self.viewController = viewController
 		self.service = service
 		self.favoritesStore = favoritesStore
 	}
 	
-	func routeToDetails(mealId: String, initialTitle: String?, initialImageURL: URL?, initialImage: UIImage?) {
+	func routeToDetails(
+		mealId: String,
+		initialTitle: String?,
+		initialImageURL: URL?,
+		initialImage: UIImage?
+	) {
 		let detailsVC = RecipeDetailAssembly.build(
 			mealId: mealId,
 			initialTitle: initialTitle,
@@ -27,7 +36,8 @@ final class RecipeListRouter: RecipeListRouterInput {
 			service: service,
 			favoritesStore: favoritesStore
 		)
-		viewController?.navigationController?.pushViewController(detailsVC, animated: true)
+		viewController?.navigationController?
+			.pushViewController(detailsVC, animated: true)
 	}
 	
 	func routeToFavorites() {
@@ -40,7 +50,8 @@ final class RecipeListRouter: RecipeListRouterInput {
 				initialImage: nil
 			)
 		}
-		viewController?.navigationController?.pushViewController(favoritesVC, animated: true)
+		viewController?.navigationController?
+			.pushViewController(favoritesVC, animated: true)
 	}
 }
 

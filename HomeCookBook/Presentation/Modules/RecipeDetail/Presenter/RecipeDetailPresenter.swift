@@ -29,7 +29,11 @@ extension RecipeDetailPresenter: RecipeDetailViewOutput {
 
 extension RecipeDetailPresenter: RecipeDetailInteractorOutput {
 	func didLoad(details: RecipeDetailEntity) {
-		view?.display(title: details.title, imageURL: details.imageURL, instructions: details.instructions)
+		view?.display(
+			title: details.title,
+			imageURL: details.imageURL,
+			instructions: details.instructions
+		)
 	}
 	
 	func didFailToLoad(error: Error) {

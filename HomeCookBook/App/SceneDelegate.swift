@@ -20,7 +20,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 		let window = UIWindow(windowScene: windowScene)
 		let root = RecipeListAssembly.build()
 		let nav = UINavigationController(rootViewController: root)
-		nav.navigationBar.prefersLargeTitles = true 
+		nav.navigationBar.prefersLargeTitles = true
 		
 		window.rootViewController = nav
 		self.window = window

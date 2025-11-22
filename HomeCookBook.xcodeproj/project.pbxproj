@@ -28,7 +28,7 @@
 		4270D7932ECF39CF002829AA /* RecipeDetailAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7922ECF39CF002829AA /* RecipeDetailAssembly.swift */; };
 		4270D7952ECF3B61002829AA /* NetworkClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7942ECF3B61002829AA /* NetworkClient.swift */; };
 		4270D7972ECF3B62002829AA /* MealSearchDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7962ECF3B62002829AA /* MealSearchDTO.swift */; };
-		4270D7992ECF3B64002829AA /* TheMealDBService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7982ECF3B64002829AA /* TheMealDBService.swift */; };
+		4270D7992ECF3B64002829AA /* MealsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7982ECF3B64002829AA /* MealsService.swift */; };
 		4270D7A12ECF3F40002829AA /* RecipeListItemEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7A02ECF3F40002829AA /* RecipeListItemEntity.swift */; };
 		4270D7B02ECF43B2002829AA /* MealLookupDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7AF2ECF43B2002829AA /* MealLookupDTO.swift */; };
 		4270D7B32ECF49B4002829AA /* ImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4270D7B22ECF49B4002829AA /* ImageLoader.swift */; };
@@ -62,7 +62,7 @@
 		4270D7922ECF39CF002829AA /* RecipeDetailAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeDetailAssembly.swift; sourceTree = "<group>"; };
 		4270D7942ECF3B61002829AA /* NetworkClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkClient.swift; sourceTree = "<group>"; };
 		4270D7962ECF3B62002829AA /* MealSearchDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealSearchDTO.swift; sourceTree = "<group>"; };
-		4270D7982ECF3B64002829AA /* TheMealDBService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TheMealDBService.swift; sourceTree = "<group>"; };
+		4270D7982ECF3B64002829AA /* MealsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealsService.swift; sourceTree = "<group>"; };
 		4270D7A02ECF3F40002829AA /* RecipeListItemEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeListItemEntity.swift; sourceTree = "<group>"; };
 		4270D7AF2ECF43B2002829AA /* MealLookupDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealLookupDTO.swift; sourceTree = "<group>"; };
 		4270D7B22ECF49B4002829AA /* ImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLoader.swift; sourceTree = "<group>"; };
@@ -207,7 +207,7 @@
 		4270D79D2ECF3EEF002829AA /* Services */ = {
 			isa = PBXGroup;
 			children = (
-				4270D7982ECF3B64002829AA /* TheMealDBService.swift */,
+				4270D7982ECF3B64002829AA /* MealsService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -247,9 +247,9 @@
 		4270D7A42ECF3FBB002829AA /* View */ = {
 			isa = PBXGroup;
 			children = (
-				4270D7B42ECF4F61002829AA /* Cell */,
 				425728922ECF1E8800E95676 /* RecipeListViewController.swift */,
 				421B1E352ED0E3650078B92D /* StateOverlayView.swift */,
+				4270D7B42ECF4F61002829AA /* Cell */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -354,6 +354,7 @@
 			isa = PBXGroup;
 			children = (
 				42E949A02ED071A200BBE470 /* CoreDataStack.swift */,
+				421B1E372ED24E640078B92D /* FavoriteRecipeMO.swift */,
 				42E949A72ED0797100BBE470 /* Favorites */,
 			);
 			path = Persistence;
@@ -363,7 +364,6 @@
 			isa = PBXGroup;
 			children = (
 				42E949A22ED071E300BBE470 /* FavoritesStore.swift */,
-				421B1E372ED24E640078B92D /* FavoriteRecipeMO.swift */,
 			);
 			path = Favorites;
 			sourceTree = "<group>";
@@ -463,7 +463,7 @@
 				4270D7A12ECF3F40002829AA /* RecipeListItemEntity.swift in Sources */,
 				4270D7B02ECF43B2002829AA /* MealLookupDTO.swift in Sources */,
 				4270D7892ECF3231002829AA /* RecipeDetailContracts.swift in Sources */,
-				4270D7992ECF3B64002829AA /* TheMealDBService.swift in Sources */,
+				4270D7992ECF3B64002829AA /* MealsService.swift in Sources */,
 				421B1E382ED24E640078B92D /* FavoriteRecipeMO.swift in Sources */,
 				4270D77E2ECF2477002829AA /* RecipeListPresenter.swift in Sources */,
 				425728882ECF16EC00E95676 /* AppDelegate.swift in Sources */,

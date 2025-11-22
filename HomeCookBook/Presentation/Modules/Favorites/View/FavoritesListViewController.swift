@@ -145,7 +145,10 @@ extension FavoritesListViewController: UITableViewDataSource {
 		_ tableView: UITableView,
 		cellForRowAt indexPath: IndexPath
 	) -> UITableViewCell {
-		let cell = tableView.dequeueReusableCell(withIdentifier: "FavoriteCell", for: indexPath)
+		let cell = tableView.dequeueReusableCell(
+			withIdentifier: "FavoriteCell",
+			for: indexPath
+		)
 		
 		guard indexPath.row < items.count else { return cell }
 		let item = items[indexPath.row]
@@ -205,7 +208,10 @@ extension FavoritesListViewController: UITableViewDelegate {
 		_ tableView: UITableView,
 		trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath
 	) -> UISwipeActionsConfiguration? {
-		let delete = UIContextualAction(style: .destructive, title: Constants.deleteTitle) { [weak self] _, _, completion in
+		let delete = UIContextualAction(
+			style: .destructive,
+			title: Constants.deleteTitle
+		) { [weak self] _, _, completion in
 			guard let self else { completion(false); return }
 			guard indexPath.row < self.items.count else { completion(false); return }
 			

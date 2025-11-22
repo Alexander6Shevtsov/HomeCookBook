@@ -7,6 +7,13 @@
 
 import UIKit
 
+private final class RecipeDetailInteractorInputProxy: RecipeDetailInteractorInput {
+	var target: RecipeDetailInteractorInput?
+	func loadDetails() {
+		target?.loadDetails()
+	}
+}
+
 enum RecipeDetailAssembly {
 	static func build(
 		mealId: String,
@@ -23,14 +30,18 @@ enum RecipeDetailAssembly {
 		view.initialImageURL = initialImageURL
 		view.initialImage = initialImage
 		
-		let interactor = RecipeDetailInteractor(mealId: mealId, service: service)
+		let interactorProxy = RecipeDetailInteractorInputProxy()
 		let presenter = RecipeDetailPresenter(
 			view: view,
-			interactor: interactor
+			interactor: interactorProxy
 		)
-		interactor.setOutput(presenter)
+		let interactor = RecipeDetailInteractor(
+			mealId: mealId,
+			service: service,
+			output: presenter
+		)
+		interactorProxy.target = interactor
 		view.output = presenter
 		return view
 	}
 }
-

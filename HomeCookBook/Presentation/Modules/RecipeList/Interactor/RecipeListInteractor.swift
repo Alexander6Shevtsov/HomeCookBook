@@ -91,7 +91,6 @@ final class RecipeListInteractor: RecipeListInteractorInput {
 	
 	func selectCategory(_ name: String?) {
 		guard let name, name.isEmpty == false else {
-			// Reset to initial feed when no category is selected
 			loadInitial()
 			return
 		}
