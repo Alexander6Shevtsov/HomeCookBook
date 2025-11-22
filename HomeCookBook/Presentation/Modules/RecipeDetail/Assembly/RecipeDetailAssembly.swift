@@ -23,13 +23,10 @@ enum RecipeDetailAssembly {
 		view.initialImageURL = initialImageURL
 		view.initialImage = initialImage
 		
-		let router = RecipeDetailRouter(viewController: view)
-		let interactor = RecipeDetailInteractor(mealId: mealId, service: service, output: nil)
+		let interactor = RecipeDetailInteractor(mealId: mealId, service: service)
 		let presenter = RecipeDetailPresenter(
 			view: view,
-			interactor: interactor,
-			router: router,
-			mealId: mealId
+			interactor: interactor
 		)
 		interactor.setOutput(presenter)
 		view.output = presenter

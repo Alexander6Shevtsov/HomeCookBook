@@ -11,19 +11,13 @@ final class RecipeDetailPresenter {
 	
 	private weak var view: RecipeDetailViewInput?
 	private let interactor: RecipeDetailInteractorInput
-	private let router: RecipeDetailRouterInput
-	private let mealId: String
 	
 	init(
 		view: RecipeDetailViewInput,
-		interactor: RecipeDetailInteractorInput,
-		router: RecipeDetailRouterInput,
-		mealId: String
+		interactor: RecipeDetailInteractorInput
 	) {
 		self.view = view
 		self.interactor = interactor
-		self.router = router
-		self.mealId = mealId
 	}
 }
 
@@ -42,4 +36,3 @@ extension RecipeDetailPresenter: RecipeDetailInteractorOutput {
 		view?.showError(message: error.localizedDescription)
 	}
 }
-

@@ -13,10 +13,9 @@ final class RecipeDetailInteractor: RecipeDetailInteractorInput {
 	private let mealId: String
 	private let service: MealsService
 	
-	init(mealId: String, service: MealsService, output: RecipeDetailInteractorOutput?) {
+	init(mealId: String, service: MealsService) {
 		self.mealId = mealId
 		self.service = service
-		self.output = output
 	}
 	
 	func setOutput(_ output: RecipeDetailInteractorOutput) {
