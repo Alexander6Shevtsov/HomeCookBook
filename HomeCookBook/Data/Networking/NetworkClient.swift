@@ -13,9 +13,12 @@ protocol NetworkClient {
 
 final class URLSessionNetworkClient: NetworkClient {
 	private let session: URLSession
+	private let decoder: JSONDecoder
 	
 	init(session: URLSession = .shared) {
 		self.session = session
+		self.decoder = JSONDecoder()
+		self.decoder.keyDecodingStrategy = .useDefaultKeys
 	}
 	
 	func get<T: Decodable>(_ url: URL) async throws -> T {
@@ -25,8 +28,6 @@ final class URLSessionNetworkClient: NetworkClient {
 			throw URLError(.badServerResponse)
 		}
 		
-		let decoder = JSONDecoder()
-		decoder.keyDecodingStrategy = .useDefaultKeys
 		return try decoder.decode(T.self, from: data)
 	}
 }
