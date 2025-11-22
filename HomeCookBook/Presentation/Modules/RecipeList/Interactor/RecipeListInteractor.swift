@@ -58,7 +58,7 @@ final class RecipeListInteractor: RecipeListInteractorInput {
 		}
 	}
 	
-	func loadMoreNextLetter() {
+	func loadMore() {
 		guard let idx = currentLetterIndex else { return }
 		let next = idx + 1
 		guard next < letters.count else {
@@ -89,7 +89,12 @@ final class RecipeListInteractor: RecipeListInteractorInput {
 		}
 	}
 	
-	func searchCategory(_ name: String) {
+	func selectCategory(_ name: String?) {
+		guard let name, name.isEmpty == false else {
+			// Reset to initial feed when no category is selected
+			loadInitial()
+			return
+		}
 		currentLetterIndex = nil
 		startNewTask {
 			let items = try await self.service.fetch(category: name)
@@ -112,4 +117,3 @@ final class RecipeListInteractor: RecipeListInteractorInput {
 		}
 	}
 }
-

@@ -133,7 +133,7 @@ extension RecipeListPresenter: RecipeListViewOutput {
 		case .category(let c):
 			isLoadingMore = false
 			hasMoreServerData = false
-			interactor.searchCategory(c)
+			interactor.selectCategory(c)
 		}
 	}
 	
@@ -162,7 +162,7 @@ extension RecipeListPresenter: RecipeListViewOutput {
 		case .initial:
 			guard hasMoreServerData else { return }
 			isLoadingMore = true
-			interactor.loadMoreNextLetter()
+			interactor.loadMore()
 		}
 	}
 	
@@ -180,7 +180,7 @@ extension RecipeListPresenter: RecipeListViewOutput {
 		if let name {
 			lastAction = .category(name)
 			hasMoreServerData = false
-			interactor.searchCategory(name)
+			interactor.selectCategory(name)
 		} else {
 			lastAction = .initial
 			if let initialRandomItems {
@@ -254,4 +254,3 @@ extension RecipeListPresenter: RecipeListInteractorOutput {
 		view?.showCategoryMenu(categories: categories, selected: selectedCategory)
 	}
 }
-

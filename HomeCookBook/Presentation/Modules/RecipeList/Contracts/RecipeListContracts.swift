@@ -27,9 +27,9 @@ protocol RecipeListViewOutput: AnyObject {
 protocol RecipeListInteractorInput: AnyObject {
 	func loadInitial()
 	func search(query: String)
-	func loadMoreNextLetter()
+	func loadMore()
 	func fetchCategories()
-	func searchCategory(_ name: String)
+	func selectCategory(_ name: String?)
 }
 
 protocol RecipeListInteractorOutput: AnyObject {
@@ -48,4 +48,3 @@ protocol RecipeListRouterInput: AnyObject {
 	)
 	func routeToFavorites()
 }
-
