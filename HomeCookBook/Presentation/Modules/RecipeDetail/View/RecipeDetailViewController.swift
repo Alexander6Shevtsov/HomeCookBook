@@ -27,7 +27,7 @@ final class RecipeDetailViewController: UIViewController {
 	private let imageLoader = ImageLoader.shared
 	private var imageTask: Task<Void, Never>?
 	
-	private var favoriteBarButtonItem: UIBarButtonItem!
+	private var favoriteBarButtonItem: UIBarButtonItem?
 	private var isFavorite: Bool = false
 	private var favoritesObserver: NSObjectProtocol?
 	private var recentlyChangedFavoriteIDs: Set<String> = []
@@ -39,6 +39,11 @@ final class RecipeDetailViewController: UIViewController {
 		static let fallbackTitle = "Recipe"
 		static let spacing: CGFloat = 12
 		static let imageHeight: CGFloat = 220
+		static let fadeDuration: TimeInterval = 0.25
+		static let recentlyChangedWindow: TimeInterval = 1.0
+		static let errorTitle = "Error"
+		static let okTitle = "OK"
+		static let placeholderIcon = "photo"
 	}
 	
 	deinit {
@@ -77,31 +82,8 @@ final class RecipeDetailViewController: UIViewController {
 			right: Constants.spacing
 		)
 		
-		titleLabel.numberOfLines = 0
-		titleLabel.textColor = .label
-		titleLabel.font = UIFont.preferredFont(forTextStyle: .largeTitle)
-		titleLabel.adjustsFontForContentSizeCategory = true
-		titleLabel.text = initialTitle ?? Constants.fallbackTitle
-		currentTitleText = titleLabel.text
-		
-		imageView.contentMode = .scaleAspectFill
-		imageView.clipsToBounds = true
-		imageView.backgroundColor = .secondarySystemBackground
-		imageView.image = UIImage(systemName: "photo")
-		imageView.tintColor = .tertiaryLabel
-		imageView.heightAnchor.constraint(
-			equalToConstant: Constants.imageHeight
-		).isActive = true
-		
-		if let initialImage {
-			imageView.image = initialImage
-			imageView.tintColor = nil
-		}
-		else if let url = initialImageURL, let cached = imageLoader.cachedImage(for: url) {
-			imageView.image = cached
-			imageView.tintColor = nil
-			currentImageURL = url
-		}
+		setupTitleLabel()
+		setupImageView()
 		
 		instructionsLabel.numberOfLines = 0
 		instructionsLabel.textColor = .label
@@ -130,6 +112,36 @@ final class RecipeDetailViewController: UIViewController {
 		])
 	}
 	
+	private func setupTitleLabel() {
+		titleLabel.numberOfLines = 0
+		titleLabel.textColor = .label
+		titleLabel.font = UIFont.preferredFont(forTextStyle: .largeTitle)
+		titleLabel.adjustsFontForContentSizeCategory = true
+		titleLabel.text = initialTitle ?? Constants.fallbackTitle
+		currentTitleText = titleLabel.text
+	}
+	
+	private func setupImageView() {
+		imageView.contentMode = .scaleAspectFill
+		imageView.clipsToBounds = true
+		imageView.backgroundColor = .secondarySystemBackground
+		imageView.heightAnchor.constraint(
+			equalToConstant: Constants.imageHeight
+		).isActive = true
+		
+		if let initialImage {
+			imageView.image = initialImage
+			imageView.tintColor = nil
+		}
+		else if let url = initialImageURL, let cached = imageLoader.cachedImage(for: url) {
+			imageView.image = cached
+			imageView.tintColor = nil
+			currentImageURL = url
+		} else {
+			showPlaceholderImage()
+		}
+	}
+	
 	private func setupFavoriteButton() {
 		favoriteBarButtonItem = UIBarButtonItem(
 			image: UIImage(systemName: "star"),
@@ -137,7 +149,7 @@ final class RecipeDetailViewController: UIViewController {
 			target: self,
 			action: #selector(didTapFavorite)
 		)
-		favoriteBarButtonItem.tintColor = .systemYellow
+		favoriteBarButtonItem?.tintColor = .systemYellow
 		navigationItem.rightBarButtonItem = favoriteBarButtonItem
 		
 		Task { [weak self] in
@@ -171,15 +183,23 @@ final class RecipeDetailViewController: UIViewController {
 	}
 	
 	private func updateFavoriteBarButton() {
-		let imageName = isFavorite ? "star.fill" : "star"
-		favoriteBarButtonItem.image = UIImage(systemName: imageName)
+		favoriteBarButtonItem?.image = UIImage(
+			systemName: isFavorite ? "star.fill" : "star"
+		)
 	}
 	
 	private func markRecentlyChanged(_ id: String) {
 		recentlyChangedFavoriteIDs.insert(id)
-		DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+		DispatchQueue.main.asyncAfter(
+			deadline: .now() + Constants.recentlyChangedWindow
+		) { [weak self] in
 			self?.recentlyChangedFavoriteIDs.remove(id)
 		}
+	}
+	
+	private func showPlaceholderImage() {
+		imageView.image = UIImage(systemName: Constants.placeholderIcon)
+		imageView.tintColor = .tertiaryLabel
 	}
 	
 	@objc private func didTapFavorite() {
@@ -200,8 +220,7 @@ final class RecipeDetailViewController: UIViewController {
 					self.updateFavoriteBarButton()
 					self.markRecentlyChanged(self.mealId)
 				}
-			} catch {
-			}
+			} catch { }
 		}
 	}
 }
@@ -226,8 +245,7 @@ extension RecipeDetailViewController: RecipeDetailViewInput {
 			return
 		}
 		
-		imageView.image = UIImage(systemName: "photo")
-		imageView.tintColor = .tertiaryLabel
+		showPlaceholderImage()
 		
 		if let url = imageURL {
 			imageTask = Task { [weak self] in
@@ -236,7 +254,7 @@ extension RecipeDetailViewController: RecipeDetailViewInput {
 					await MainActor.run {
 						UIView.transition(
 							with: self.imageView,
-							duration: 0.25,
+							duration: Constants.fadeDuration,
 							options: .transitionCrossDissolve,
 							animations: {
 								self.imageView.image = image
@@ -251,11 +269,11 @@ extension RecipeDetailViewController: RecipeDetailViewInput {
 	
 	func showError(message: String) {
 		let alert = UIAlertController(
-			title: "Error",
+			title: Constants.errorTitle,
 			message: message,
 			preferredStyle: .alert
 		)
-		alert.addAction(UIAlertAction(title: "OK", style: .default))
+		alert.addAction(UIAlertAction(title: Constants.okTitle, style: .default))
 		present(alert, animated: true)
 	}
 }
