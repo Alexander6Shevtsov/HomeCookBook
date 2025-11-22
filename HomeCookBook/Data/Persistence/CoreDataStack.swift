@@ -8,15 +8,6 @@
 import Foundation
 import CoreData
 
-@objc(FavoriteRecipeMO)
-final class FavoriteRecipeMO: NSManagedObject {
-	@NSManaged var id: String
-	@NSManaged var title: String
-	@NSManaged var subtitle: String?
-	@NSManaged var thumbnailURL: String?
-	@NSManaged var dateAdded: Date
-}
-
 final class CoreDataStack {
 	static let shared = CoreDataStack()
 	
@@ -24,7 +15,10 @@ final class CoreDataStack {
 	
 	private init() {
 		let model = Self.makeModel()
-		container = NSPersistentContainer(name: "HomeCookBookModel", managedObjectModel: model)
+		container = NSPersistentContainer(
+			name: "HomeCookBookModel",
+			managedObjectModel: model
+		)
 		
 		let storeURL: URL = {
 			let fileManager = FileManager.default
@@ -34,7 +28,7 @@ final class CoreDataStack {
 				appropriateFor: nil,
 				create: true
 			)
-			let directory = appSupport ?? fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+			guard let directory = appSupport else { fatalError() }
 			let folder = directory.appendingPathComponent("HomeCookBook", isDirectory: true)
 			try? fileManager.createDirectory(at: folder, withIntermediateDirectories: true)
 			return folder.appendingPathComponent("HomeCookBook.sqlite")
@@ -92,7 +86,10 @@ final class CoreDataStack {
 		entity.properties = [id, title, subtitle, thumb, date]
 		entity.uniquenessConstraints = [["id"]]
 		
-		let idIndexElement = NSFetchIndexElementDescription(property: id, collationType: .binary)
+		let idIndexElement = NSFetchIndexElementDescription(
+			property: id,
+			collationType: .binary
+		)
 		let idIndex = NSFetchIndexDescription(
 			name: "FavoriteRecipe_id_index",
 			elements: [idIndexElement]
@@ -103,4 +100,3 @@ final class CoreDataStack {
 		return model
 	}
 }
-
