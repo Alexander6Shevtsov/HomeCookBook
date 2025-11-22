@@ -7,7 +7,17 @@
 
 import UIKit
 
-final class FavoritesListViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UITableViewDataSourcePrefetching {
+private enum Constants {
+	static let iconSize: CGFloat = 40
+	static let iconCornerRadius: CGFloat = 6
+	static let recentlyChangedWindow: TimeInterval = 1.0
+	static let placeholderIcon = "photo"
+	static let deleteTitle = "Delete"
+	static let favoritesTitle = "Favorites"
+	static let iconSizeCGSize = CGSize(width: iconSize, height: iconSize)
+}
+
+final class FavoritesListViewController: UIViewController {
 	
 	private let favoritesStore: FavoritesStore
 	var onSelect: ((String, String?, URL?) -> Void)?
@@ -39,13 +49,14 @@ final class FavoritesListViewController: UIViewController, UITableViewDataSource
 	
 	override func viewDidLoad() {
 		super.viewDidLoad()
-		title = "Favorites"
+		title = Constants.favoritesTitle
 		view.backgroundColor = .systemBackground
 		
 		tableView.translatesAutoresizingMaskIntoConstraints = false
 		tableView.dataSource = self
 		tableView.delegate = self
 		tableView.prefetchDataSource = self
+		tableView.register(UITableViewCell.self, forCellReuseIdentifier: "FavoriteCell")
 		view.addSubview(tableView)
 		
 		NSLayoutConstraint.activate([
@@ -87,9 +98,15 @@ final class FavoritesListViewController: UIViewController, UITableViewDataSource
 	}
 	
 	private func markRecentlyChanged(_ id: String) {
-		recentlyChangedFavoriteIDs.insert(id)
-		DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-			self?.recentlyChangedFavoriteIDs.remove(id)
+		weak var weakSelf = self
+		_ = Task.detached {
+			try? await Task.sleep(
+				nanoseconds: UInt64(Constants.recentlyChangedWindow * 1_000_000_000)
+			)
+			await MainActor.run {
+				guard let self = weakSelf else { return }
+				self.recentlyChangedFavoriteIDs.remove(id)
+			}
 		}
 	}
 	
@@ -99,20 +116,26 @@ final class FavoritesListViewController: UIViewController, UITableViewDataSource
 	}
 	
 	private func reloadFavorites() {
-		Task { [weak self] in
+		_ = Task { [weak self] in
 			guard let self else { return }
-			do {
-				let fetched = try await favoritesStore.fetchAll()
+			if let fetched = try? await favoritesStore.fetchAll() {
 				await MainActor.run {
 					self.cancelAllImageTasks()
 					self.items = fetched
 					self.tableView.reloadData()
 				}
-			} catch {
 			}
 		}
 	}
 	
+	private func configureImageProperties(_ cfg: inout UIListContentConfiguration) {
+		cfg.imageProperties.maximumSize = Constants.iconSizeCGSize
+		cfg.imageProperties.reservedLayoutSize = Constants.iconSizeCGSize
+		cfg.imageProperties.cornerRadius = Constants.iconCornerRadius
+	}
+}
+
+extension FavoritesListViewController: UITableViewDataSource {
 	func tableView(
 		_ tableView: UITableView,
 		numberOfRowsInSection section: Int
@@ -124,27 +147,22 @@ final class FavoritesListViewController: UIViewController, UITableViewDataSource
 		_ tableView: UITableView,
 		cellForRowAt indexPath: IndexPath
 	) -> UITableViewCell {
-		let reuseId = "FavoriteCell"
-		let cell = tableView.dequeueReusableCell(
-			withIdentifier: reuseId
-		) ?? UITableViewCell(style: .subtitle, reuseIdentifier: reuseId)
+		let cell = tableView.dequeueReusableCell(withIdentifier: "FavoriteCell", for: indexPath)
 		
 		guard indexPath.row < items.count else { return cell }
 		let item = items[indexPath.row]
 		
 		var content = cell.defaultContentConfiguration()
 		content.text = item.title
-		content.secondaryText = item.subtitle		
+		content.secondaryText = item.subtitle
 		content.secondaryTextProperties.color = .secondaryLabel
-		content.imageProperties.maximumSize = CGSize(width: 40, height: 40)
-		content.imageProperties.reservedLayoutSize = CGSize(width: 40, height: 40)
-		content.imageProperties.cornerRadius = 6
+		configureImageProperties(&content)
 		content.imageProperties.tintColor = .tertiaryLabel
 		
 		imageTasks[indexPath]?.cancel()
 		imageTasks[indexPath] = nil
 		
-		content.image = UIImage(systemName: "photo")
+		content.image = UIImage(systemName: Constants.placeholderIcon)
 		
 		if let url = item.thumbnailURL {
 			if let cached = imageLoader.cachedImage(for: url) {
@@ -164,9 +182,7 @@ final class FavoritesListViewController: UIViewController, UITableViewDataSource
 							else { return }
 							
 							if var cfg = visibleCell.contentConfiguration as? UIListContentConfiguration {
-								cfg.imageProperties.maximumSize = CGSize(width: 40, height: 40)
-								cfg.imageProperties.reservedLayoutSize = CGSize(width: 40, height: 40)
-								cfg.imageProperties.cornerRadius = 6
+								self.configureImageProperties(&cfg)
 								cfg.image = image
 								visibleCell.contentConfiguration = cfg
 							}
@@ -181,7 +197,9 @@ final class FavoritesListViewController: UIViewController, UITableViewDataSource
 		cell.accessoryType = .disclosureIndicator
 		return cell
 	}
-	
+}
+
+extension FavoritesListViewController: UITableViewDelegate {
 	func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
 		tableView.deselectRow(at: indexPath, animated: true)
 		guard indexPath.row < items.count else { return }
@@ -193,7 +211,7 @@ final class FavoritesListViewController: UIViewController, UITableViewDataSource
 		_ tableView: UITableView,
 		trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath
 	) -> UISwipeActionsConfiguration? {
-		let delete = UIContextualAction(style: .destructive, title: "Delete") { [weak self] _, _, completion in
+		let delete = UIContextualAction(style: .destructive, title: Constants.deleteTitle) { [weak self] _, _, completion in
 			guard let self else { completion(false); return }
 			guard indexPath.row < self.items.count else { completion(false); return }
 			
@@ -201,7 +219,7 @@ final class FavoritesListViewController: UIViewController, UITableViewDataSource
 			
 			self.markRecentlyChanged(id)
 			
-			Task { [weak self] in
+			_ = Task { [weak self] in
 				guard let self else { return }
 				do {
 					try await self.favoritesStore.remove(id: id)
@@ -228,27 +246,25 @@ final class FavoritesListViewController: UIViewController, UITableViewDataSource
 		imageTasks[indexPath]?.cancel()
 		imageTasks[indexPath] = nil
 	}
-	
+}
+
+extension FavoritesListViewController: UITableViewDataSourcePrefetching {
 	func tableView(_ tableView: UITableView, prefetchRowsAt indexPaths: [IndexPath]) {
 		let urls = indexPaths.compactMap { indexPath -> URL? in
 			guard indexPath.row < items.count else { return nil }
 			return items[indexPath.row].thumbnailURL
 		}
 		guard !urls.isEmpty else { return }
-		Task { await imageLoader.prefetch(urls: urls) }
+		_ = Task { await imageLoader.prefetch(urls: urls) }
 	}
 	
 	func tableView(_ tableView: UITableView, cancelPrefetchingForRowsAt indexPaths: [IndexPath]) {
-		let urls = indexPaths.compactMap { indexPath -> URL? in
-			guard indexPath.row < items.count else { return nil }
-			return items[indexPath.row].thumbnailURL
-		}
-		guard !urls.isEmpty else { return }
-		Task {
-			for url in urls {
+		_ = Task {
+			for indexPath in indexPaths {
+				guard indexPath.row < items.count,
+					  let url = items[indexPath.row].thumbnailURL else { continue }
 				await imageLoader.cancelPrefetch(url: url)
 			}
 		}
 	}
 }
-
