@@ -24,7 +24,6 @@ final class RecipeListPresenter {
 	
 	private enum LastAction {
 		case initial
-		case refresh
 		case search(String)
 		case category(String)
 	}
@@ -81,22 +80,6 @@ extension RecipeListPresenter: RecipeListViewOutput {
 		)
 	}
 	
-	func refresh() {
-		selectedCategory = nil
-		isLoadingMore = false
-		if let initialRandomItems {
-			lastAction = .initial
-			hasMoreServerData = true
-			resetPagination(with: initialRandomItems)
-			view?.display(items: viewModels)
-			interactor.loadInitial()
-			return
-		}
-		lastAction = .refresh
-		hasMoreServerData = true
-		interactor.refresh()
-	}
-	
 	func search(query: String) {
 		selectedCategory = nil
 		let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -143,17 +126,6 @@ extension RecipeListPresenter: RecipeListViewOutput {
 				hasMoreServerData = true
 				interactor.loadInitial()
 			}
-		case .refresh:
-			isLoadingMore = false
-			if let initialRandomItems {
-				hasMoreServerData = true
-				resetPagination(with: initialRandomItems)
-				view?.display(items: viewModels)
-				interactor.loadInitial()
-			} else {
-				hasMoreServerData = true
-				interactor.refresh()
-			}
 		case .search(let q):
 			isLoadingMore = false
 			hasMoreServerData = false
@@ -187,7 +159,7 @@ extension RecipeListPresenter: RecipeListViewOutput {
 		switch lastAction {
 		case .search, .category:
 			return
-		case .initial, .refresh:
+		case .initial:
 			guard hasMoreServerData else { return }
 			isLoadingMore = true
 			interactor.loadMoreNextLetter()
@@ -242,11 +214,6 @@ extension RecipeListPresenter: RecipeListInteractorOutput {
 			}
 			view?.display(items: viewModels)
 			
-		case .refresh:
-			resetPagination(with: mappedViewModels)
-			hasMoreServerData = true
-			view?.display(items: viewModels)
-			
 		case .search, .category:
 			resetPagination(with: mappedViewModels)
 			hasMoreServerData = false
@@ -287,3 +254,4 @@ extension RecipeListPresenter: RecipeListInteractorOutput {
 		view?.showCategoryMenu(categories: categories, selected: selectedCategory)
 	}
 }
+

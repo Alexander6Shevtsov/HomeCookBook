@@ -35,15 +35,6 @@ final class RecipeListInteractor: RecipeListInteractorInput {
 		}
 	}
 	
-	func refresh() {
-		currentLetterIndex = 0
-		startNewTask {
-			let letter = self.letters[self.currentLetterIndex ?? 0]
-			let items = try await self.service.fetch(firstLetter: letter)
-			await MainActor.run { self.output?.didLoad(items: items) }
-		}
-	}
-	
 	func search(query: String) {
 		currentLetterIndex = nil
 		startNewTask {

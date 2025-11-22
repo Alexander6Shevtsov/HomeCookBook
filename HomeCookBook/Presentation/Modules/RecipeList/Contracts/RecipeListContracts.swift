@@ -16,7 +16,6 @@ protocol RecipeListViewInput: AnyObject {
 protocol RecipeListViewOutput: AnyObject {
 	func viewDidLoad()
 	func didSelectItem(at index: Int, previewImage: UIImage?)
-	func refresh()
 	func search(query: String)
 	func retry()
 	func loadMore()
@@ -27,7 +26,6 @@ protocol RecipeListViewOutput: AnyObject {
 
 protocol RecipeListInteractorInput: AnyObject {
 	func loadInitial()
-	func refresh()
 	func search(query: String)
 	func loadMoreNextLetter()
 	func fetchCategories()

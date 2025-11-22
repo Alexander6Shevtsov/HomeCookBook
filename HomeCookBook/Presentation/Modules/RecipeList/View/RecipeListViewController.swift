@@ -19,6 +19,7 @@ final class RecipeListViewController: UIViewController {
 	private let collectionView: UICollectionView
 	private let searchController = UISearchController(searchResultsController: nil)
 	private var searchTask: Task<Void, Never>?
+	private var lastSearchQuery: String = ""
 	
 	private var items: [RecipeListItemViewModel] = []
 	
@@ -52,12 +53,6 @@ final class RecipeListViewController: UIViewController {
 		static let emptyMessage = "Try another query or clear the search."
 		static let errorTitle = "Something went wrong"
 		static let retryTitle = "Retry"
-		static let titleTapHint = "Прокрутить к началу"
-	}
-	
-	private enum AccessibilityConstants {
-		static let filterLabel = "Filter"
-		static let favoritesLabel = "Favorites"
 	}
 	
 	private enum SymbolNameConstants {
@@ -85,16 +80,29 @@ final class RecipeListViewController: UIViewController {
 			bottom: LayoutConstants.sectionInset,
 			right: LayoutConstants.sectionInset
 		)
-		self.collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
+		self.collectionView = UICollectionView(
+			frame: .zero,
+			collectionViewLayout: layout
+		)
 		self.favoritesStore = favoritesStore
 		super.init(nibName: nil, bundle: nil)
 	}
 	
-	required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+	required init?(coder: NSCoder) {
+		fatalError("init(coder:) has not been implemented")
+	}
 	
 	deinit {
 		if let observer = favoritesObserver {
 			NotificationCenter.default.removeObserver(observer)
+		}
+		
+		searchTask?.cancel()
+		
+		cancelAllImageTasks()
+		
+		Task { [imageLoader] in
+			await imageLoader.cancelAllPrefetches()
 		}
 	}
 	
@@ -123,7 +131,6 @@ final class RecipeListViewController: UIViewController {
 			image: UIImage(systemName: SymbolNameConstants.filterIcon),
 			menu: initialMenu
 		)
-		filterButton.accessibilityLabel = AccessibilityConstants.filterLabel
 		navigationItem.leftBarButtonItem = filterButton
 		
 		let favoritesButton = UIBarButtonItem(
@@ -132,7 +139,6 @@ final class RecipeListViewController: UIViewController {
 			target: self,
 			action: #selector(didTapFavorites)
 		)
-		favoritesButton.accessibilityLabel = AccessibilityConstants.favoritesLabel
 		navigationItem.rightBarButtonItem = favoritesButton
 		
 		setFilterTitle(nil)
@@ -144,7 +150,7 @@ final class RecipeListViewController: UIViewController {
 		collectionView.prefetchDataSource = self
 		collectionView.register(
 			RecipeCardCell.self,
-			forCellWithReuseIdentifier: RecipeCardCell.reuseId
+			forCellWithReuseIdentifier: RecipeCardCell.reuseIdentifier
 		)
 		
 		stateView.translatesAutoresizingMaskIntoConstraints = false
@@ -185,14 +191,16 @@ final class RecipeListViewController: UIViewController {
 		label.adjustsFontSizeToFitWidth = true
 		label.minimumScaleFactor = 0.8
 		label.isUserInteractionEnabled = true
-		let tap = UITapGestureRecognizer(target: self, action: #selector(didTapTitle))
-		label.addGestureRecognizer(tap)
-		label.accessibilityTraits.insert(.button)
-		label.accessibilityHint = TextConstants.titleTapHint
+		let tapGesture = UITapGestureRecognizer(
+			target: self,
+			action: #selector(didTapTitle)
+		)
+		label.addGestureRecognizer(tapGesture)
 		return label
 	}
 	
-	@objc private func didTapTitle() {
+	@objc
+	private func didTapTitle() {
 		view.endEditing(true)
 		let topY = -collectionView.adjustedContentInset.top
 		collectionView.setContentOffset(CGPoint(x: 0, y: topY), animated: true)
@@ -218,7 +226,8 @@ final class RecipeListViewController: UIViewController {
 		)
 	}
 	
-	@objc private func didTapFavorites() {
+	@objc
+	private func didTapFavorites() {
 		output?.showFavorites()
 	}
 	
@@ -231,6 +240,8 @@ final class RecipeListViewController: UIViewController {
 				await MainActor.run {
 					self.favoriteIDs = favoriteIdentifiers
 					self.collectionView.reloadData()
+				}
+				_ = await MainActor.run {
 				}
 			} catch {
 			}
@@ -245,9 +256,13 @@ final class RecipeListViewController: UIViewController {
 			guard
 				let favoriteId = notification.userInfo?[FavoritesNotification.idKey] as? String,
 				let isFavorite = notification.userInfo?[FavoritesNotification.isFavoriteKey] as? Bool
-			else { return }
+			else {
+				return
+			}
 			
-			if self.recentlyChangedFavoriteIDs.contains(favoriteId) { return }
+			if self.recentlyChangedFavoriteIDs.contains(favoriteId) {
+				return
+			}
 			
 			if isFavorite {
 				self.favoriteIDs.insert(favoriteId)
@@ -257,9 +272,7 @@ final class RecipeListViewController: UIViewController {
 			
 			if let favoriteIndex = self.items.firstIndex(where: { $0.id == favoriteId }) {
 				let indexPath = IndexPath(item: favoriteIndex, section: 0)
-				if let cell = self.collectionView.cellForItem(
-					at: indexPath
-				) as? RecipeCardCell {
+				if let cell = self.collectionView.cellForItem(at: indexPath) as? RecipeCardCell {
 					cell.setFavorite(isFavorite)
 				}
 			}
@@ -268,10 +281,13 @@ final class RecipeListViewController: UIViewController {
 	
 	private func markRecentlyChanged(_ id: String) {
 		recentlyChangedFavoriteIDs.insert(id)
-		DispatchQueue.main.asyncAfter(
-			deadline: .now() + BehaviorConstants.recentlyChangedWindow
-		) { [weak self] in
-			self?.recentlyChangedFavoriteIDs.remove(id)
+		Task { [weak self] in
+			try? await Task.sleep(
+				nanoseconds: UInt64(BehaviorConstants.recentlyChangedWindow * 1_000_000_000)
+			)
+			_ = await MainActor.run {
+				self?.recentlyChangedFavoriteIDs.remove(id)
+			}
 		}
 	}
 	
@@ -342,8 +358,8 @@ final class RecipeListViewController: UIViewController {
 		let columnsCount = columns(for: width)
 		let rowsOnScreen = max(1, Int(ceil(collectionView.bounds.height / size.height)))
 		let preheatRows = rowsOnScreen + BehaviorConstants.preheatExtraRows
-		let count = min(items.count, preheatRows * columnsCount)
-		let urls = (0..<count).compactMap { items[$0].thumbnailURL }
+		let itemsToPreheatCount = min(items.count, preheatRows * columnsCount)
+		let urls = (0..<itemsToPreheatCount).compactMap { items[$0].thumbnailURL }
 		guard !urls.isEmpty else { return }
 		Task { await imageLoader.prefetch(urls: urls) }
 	}
@@ -361,12 +377,12 @@ extension RecipeListViewController: UICollectionViewDataSource {
 		_ collectionView: UICollectionView,
 		cellForItemAt indexPath: IndexPath
 	) -> UICollectionViewCell {
-		let dequeued = collectionView.dequeueReusableCell(
-			withReuseIdentifier: RecipeCardCell.reuseId,
+		let dequeuedCell = collectionView.dequeueReusableCell(
+			withReuseIdentifier: RecipeCardCell.reuseIdentifier,
 			for: indexPath
 		)
-		guard let cell = dequeued as? RecipeCardCell else {
-			return dequeued
+		guard let cell = dequeuedCell as? RecipeCardCell else {
+			return dequeuedCell
 		}
 		
 		let itemViewModel = items[indexPath.item]
@@ -397,12 +413,13 @@ extension RecipeListViewController: UICollectionViewDataSource {
 				guard let self else { return }
 				do {
 					let nowFavorite = try await favoritesStore.toggle(item: favoriteItem)
-					await MainActor.run {
+					_ = await MainActor.run {
 						if nowFavorite {
 							self.favoriteIDs.insert(itemViewModel.id)
 						} else {
 							self.favoriteIDs.remove(itemViewModel.id)
 						}
+						
 						if let collectionView,
 						   let visibleCell = collectionView.cellForItem(
 							at: indexPath
@@ -423,8 +440,8 @@ extension RecipeListViewController: UICollectionViewDataSource {
 			return cell
 		}
 		
-		if let cached = imageLoader.cachedImage(for: url) {
-			cell.setImage(cached)
+		if let cachedImage = imageLoader.cachedImage(for: url) {
+			cell.setImage(cachedImage)
 			return cell
 		}
 		
@@ -433,15 +450,21 @@ extension RecipeListViewController: UICollectionViewDataSource {
 		let task = Task { [weak self, weak collectionView] in
 			guard let self else { return }
 			if let image = try? await self.imageLoader.image(from: url) {
-				await MainActor.run {
+				_ = await MainActor.run {
 					guard
 						let collectionView,
 						let visibleCell = collectionView.cellForItem(
 							at: indexPath
 						) as? RecipeCardCell
-					else { return }
-					guard indexPath.item < self.items.count, self
-						.items[indexPath.item].id == expectedId else { return }
+					else {
+						return
+					}
+					
+					guard indexPath.item < self.items.count,
+						  self.items[indexPath.item].id == expectedId else {
+						return
+					}
+					
 					visibleCell.setImage(image)
 				}
 			}
@@ -505,6 +528,7 @@ extension RecipeListViewController: UICollectionViewDataSourcePrefetching {
 			return items[indexPath.item].thumbnailURL
 		}
 		guard !urls.isEmpty else { return }
+		
 		Task { await imageLoader.prefetch(urls: urls) }
 		
 		guard !items.isEmpty else { return }
@@ -523,6 +547,7 @@ extension RecipeListViewController: UICollectionViewDataSourcePrefetching {
 			return items[indexPath.item].thumbnailURL
 		}
 		guard !urls.isEmpty else { return }
+		
 		Task {
 			for url in urls {
 				await imageLoader.cancelPrefetch(url: url)
@@ -536,7 +561,6 @@ extension RecipeListViewController: RecipeListViewInput {
 		let oldItems = self.items
 		let oldCount = oldItems.count
 		let newCount = newItems.count
-		
 		let isAppend =
 		oldCount > 0 &&
 		newCount >= oldCount &&
@@ -599,19 +623,36 @@ extension RecipeListViewController: RecipeListViewInput {
 
 extension RecipeListViewController: UISearchResultsUpdating {
 	func updateSearchResults(for searchController: UISearchController) {
-		let searchQuery = searchController.searchBar.text ?? ""
+		let rawText = searchController.searchBar.text ?? ""
+		let searchQuery = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
+		
 		searchTask?.cancel()
+		searchTask = nil
+		
 		if searchQuery.isEmpty {
+			lastSearchQuery = ""
 			output?.search(query: "")
 			return
 		}
+		
+		if searchQuery == lastSearchQuery {
+			return
+		}
+		
+		lastSearchQuery = searchQuery
+		
 		let debounceDelayNanoseconds = UInt64(
 			BehaviorConstants.debounceSeconds * 1_000_000_000
 		)
+		
 		searchTask = Task { [weak self] in
 			try? await Task.sleep(nanoseconds: debounceDelayNanoseconds)
 			guard !Task.isCancelled else { return }
-			self?.output?.search(query: searchQuery)
+			
+			_ = await MainActor.run { [weak self] in
+				guard let self else { return }
+				self.output?.search(query: searchQuery)
+			}
 		}
 	}
 }

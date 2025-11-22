@@ -134,7 +134,7 @@ final class FavoritesListViewController: UIViewController, UITableViewDataSource
 		
 		var content = cell.defaultContentConfiguration()
 		content.text = item.title
-		content.secondaryText = item.subtitle
+		content.secondaryText = item.subtitle		
 		content.secondaryTextProperties.color = .secondaryLabel
 		content.imageProperties.maximumSize = CGSize(width: 40, height: 40)
 		content.imageProperties.reservedLayoutSize = CGSize(width: 40, height: 40)

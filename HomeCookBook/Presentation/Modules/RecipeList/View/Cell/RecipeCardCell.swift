@@ -8,7 +8,7 @@
 import UIKit
 
 final class RecipeCardCell: UICollectionViewCell {
-	static let reuseId = "RecipeCardCell"
+	static let reuseIdentifier = "RecipeCardCell"
 	
 	private let imageView = UIImageView()
 	private let titleLabel = UILabel()

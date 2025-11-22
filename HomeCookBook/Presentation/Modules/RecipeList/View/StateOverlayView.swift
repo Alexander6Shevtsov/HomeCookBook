@@ -47,12 +47,14 @@ final class StateOverlayView: UIView {
 		
 		titleLabel.translatesAutoresizingMaskIntoConstraints = false
 		titleLabel.font = UIFont.preferredFont(forTextStyle: .headline)
+		titleLabel.adjustsFontForContentSizeCategory = true
 		titleLabel.textColor = .label
 		titleLabel.numberOfLines = 0
 		titleLabel.textAlignment = .center
 		
 		messageLabel.translatesAutoresizingMaskIntoConstraints = false
 		messageLabel.font = UIFont.preferredFont(forTextStyle: .subheadline)
+		messageLabel.adjustsFontForContentSizeCategory = true
 		messageLabel.textColor = .secondaryLabel
 		messageLabel.numberOfLines = 0
 		messageLabel.textAlignment = .center
@@ -66,19 +68,35 @@ final class StateOverlayView: UIView {
 		stack.addArrangedSubview(messageLabel)
 		stack.addArrangedSubview(retryButton)
 		
-		NSLayoutConstraint.activate([
-			stack.centerXAnchor.constraint(equalTo: centerXAnchor),
-			stack.centerYAnchor.constraint(equalTo: centerYAnchor),
-			stack.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor, constant: UIConst.stackHorizontalInset),
-			stack.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -UIConst.stackHorizontalInset),
-			
-			symbolView.widthAnchor.constraint(equalToConstant: UIConst.symbolSize),
-			symbolView.heightAnchor.constraint(equalToConstant: UIConst.symbolSize)
-		])
+		NSLayoutConstraint.activate(
+			[
+				stack.centerXAnchor.constraint(equalTo: centerXAnchor),
+				stack.centerYAnchor.constraint(equalTo: centerYAnchor),
+				stack.leadingAnchor.constraint(
+					greaterThanOrEqualTo: leadingAnchor,
+					constant: UIConst.stackHorizontalInset
+				),
+				stack.trailingAnchor.constraint(
+					lessThanOrEqualTo: trailingAnchor,
+					constant: -UIConst.stackHorizontalInset
+				),
+				
+				symbolView.widthAnchor.constraint(equalToConstant: UIConst.symbolSize),
+				symbolView.heightAnchor.constraint(equalToConstant: UIConst.symbolSize)
+			]
+		)
 	}
 	
-	func configure(symbolName: String, title: String, message: String, buttonTitle: String?) {
-		let config = UIImage.SymbolConfiguration(pointSize: UIConst.symbolPointSize, weight: .regular)
+	func configure(
+		symbolName: String,
+		title: String,
+		message: String,
+		buttonTitle: String?
+	) {
+		let config = UIImage.SymbolConfiguration(
+			pointSize: UIConst.symbolPointSize,
+			weight: .regular
+		)
 		symbolView.image = UIImage(systemName: symbolName, withConfiguration: config)
 		
 		titleLabel.text = title
@@ -97,4 +115,3 @@ final class StateOverlayView: UIView {
 		onRetry?()
 	}
 }
-
