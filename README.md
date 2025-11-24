@@ -9,12 +9,12 @@ iOS-приложение на UIKit
 
 ---
 
-<img width="300" height="2622" alt="home" src="https://github.com/user-attachments/assets/fa8bec89-efa1-4aa4-9aaa-4d23c56c26d6" />
-<img width="300" height="2622" alt="dark" src="https://github.com/user-attachments/assets/2fd55a35-57d6-492c-80d3-5265b0946be7" />
-<img width="300" height="2622" alt="detail" src="https://github.com/user-attachments/assets/8563ec9f-dccc-468a-87fe-23ec889e51f5" />
-<img width="300" height="2622" alt="search" src="https://github.com/user-attachments/assets/0ba217f5-3322-46e7-8621-f417c22a43fd" />
-<img width="300" height="2622" alt="filters" src="https://github.com/user-attachments/assets/0fcc4c6e-a894-48d0-8b79-2f04ebb4a35d" />
-<img width="300" height="2622" alt="delete" src="https://github.com/user-attachments/assets/230be7c8-c25e-49cd-a1e3-4eb694072233" />
+<img width="330" height="2622" alt="home" src="https://github.com/user-attachments/assets/fa8bec89-efa1-4aa4-9aaa-4d23c56c26d6" />
+<img width="330" height="2622" alt="dark" src="https://github.com/user-attachments/assets/2fd55a35-57d6-492c-80d3-5265b0946be7" />
+<img width="330" height="2622" alt="detail" src="https://github.com/user-attachments/assets/8563ec9f-dccc-468a-87fe-23ec889e51f5" />
+<img width="330" height="2622" alt="search" src="https://github.com/user-attachments/assets/0ba217f5-3322-46e7-8621-f417c22a43fd" />
+<img width="330" height="2622" alt="filters" src="https://github.com/user-attachments/assets/0fcc4c6e-a894-48d0-8b79-2f04ebb4a35d" />
+<img width="330" height="2622" alt="delete" src="https://github.com/user-attachments/assets/230be7c8-c25e-49cd-a1e3-4eb694072233" />
 
 ---
 
