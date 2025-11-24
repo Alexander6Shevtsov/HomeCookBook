@@ -6,15 +6,23 @@ iOS-приложение на UIKit
 Загружает рецепты из открытого API [TheMealDB](https://www.themealdb.com). 
 Показывает список блюд, детали рецепта, позволяет искать и сохранять в избранное.
 
-Минимальная версия iOS: **15+**
 
-Архитектура: VIPER
+---
+Скриншоты
+
+<img width="330" height="2622" alt="home" src="https://github.com/user-attachments/assets/fa8bec89-efa1-4aa4-9aaa-4d23c56c26d6" />
+<img width="330" height="2622" alt="dark" src="https://github.com/user-attachments/assets/2fd55a35-57d6-492c-80d3-5265b0946be7" />
+<img width="330" height="2622" alt="detail" src="https://github.com/user-attachments/assets/8563ec9f-dccc-468a-87fe-23ec889e51f5" />
+<img width="330" height="2622" alt="search" src="https://github.com/user-attachments/assets/0ba217f5-3322-46e7-8621-f417c22a43fd" />
+<img width="330" height="2622" alt="filters" src="https://github.com/user-attachments/assets/0fcc4c6e-a894-48d0-8b79-2f04ebb4a35d" />
+<img width="330" height="2622" alt="delete" src="https://github.com/user-attachments/assets/230be7c8-c25e-49cd-a1e3-4eb694072233" />
 
 ---
 
 ## Основные функции
 
 - Список рецептов:
+  - рандомная загрузка первой страницы (условная) 
   - коллекция карточек с обложкой и названием блюда
   - поиск по названию (если нет результатов — по категориям)
   - фильтр по категориям (меню категорий)
@@ -32,6 +40,19 @@ iOS-приложение на UIKit
   - предзагрузка изображений
 
 - Поддержка светлой/темной темы
+  
+---
+
+## Стек проекта
+- Swift 5+, iOS 15.6+
+- UIKit (UICollectionView, UITableView, UISearchController, UINavigationController)
+- VIPER (RecipeList, RecipeDetail) + отдельный экран Favorites
+- URLSession + JSONDecoder (API TheMealDB)
+- Core Data (избранное)
+- ImageLoader: NSCache + FileManager
+- Swift Concurrency: async/await, actor, Task
+- NotificationCenter (синхронизация избранного)
+
 ---
 
 ## Архитектура
@@ -130,7 +151,7 @@ Data/
     MealSearchDTO.swift
     MealLookupDTO.swift
   Services/
-    TheMealDBService.swift
+    MealsService.swift
 
 Domain/
   Entities/
