@@ -117,7 +117,7 @@ final class RecipeListCollectionController: NSObject {
 			sectionInsets: sectionInsets,
 			interItemSpacing: interItem
 		)
-		let columnsCount = layoutCalculator.columns(forWidth: width)
+		let columnsCount = layoutCalculator.columnsCount()
 		let rowsOnScreen = max(1, Int(ceil(collectionView.bounds.height / itemSize.height)))
 		let preheatRows = rowsOnScreen + Behavior.preheatExtraRows
 		let itemsToPreheatCount = min(items.count, preheatRows * columnsCount)

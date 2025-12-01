@@ -32,7 +32,7 @@ struct RecipeListLayoutCalculator {
 		return layout
 	}
 	
-	func columns(forWidth width: CGFloat) -> Int {
+	func columnsCount() -> Int {
 		return 2
 	}
 	
@@ -41,7 +41,7 @@ struct RecipeListLayoutCalculator {
 		sectionInsets: UIEdgeInsets,
 		interItemSpacing: CGFloat
 	) -> CGSize {
-		let columnsCount = CGFloat(columns(forWidth: containerWidth))
+		let columnsCount = CGFloat(self.columnsCount())
 		let totalHorizontalSpacing =
 		sectionInsets.left
 		+ sectionInsets.right

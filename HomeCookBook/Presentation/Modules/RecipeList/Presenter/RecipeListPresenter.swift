@@ -205,13 +205,9 @@ extension RecipeListPresenter: RecipeListInteractorOutput {
 			if initialRandomItems == nil {
 				initialRandomItems = mappedViewModels.shuffled()
 			}
-			if let initialRandomItems {
-				resetPagination(with: initialRandomItems)
-				hasMoreServerData = true
-			} else {
-				resetPagination(with: mappedViewModels)
-				hasMoreServerData = true
-			}
+			let source = initialRandomItems ?? mappedViewModels
+			resetPagination(with: source)
+			hasMoreServerData = true
 			view?.display(items: viewModels)
 			
 		case .search, .category:

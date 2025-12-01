@@ -316,8 +316,7 @@ extension RecipeListViewController: RecipeListViewInput {
 extension RecipeListViewController: UISearchResultsUpdating {
 	func updateSearchResults(for searchController: UISearchController) {
 		let rawText = searchController.searchBar.text ?? ""
-		let query = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
-		output?.search(query: query)
+		output?.search(query: rawText)
 	}
 }
 
