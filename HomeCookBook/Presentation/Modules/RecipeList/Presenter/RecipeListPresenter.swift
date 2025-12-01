@@ -71,11 +71,11 @@ extension RecipeListPresenter: RecipeListViewOutput {
 	
 	func didSelectItem(at index: Int, previewImage: UIImage?) {
 		guard index >= 0, index < viewModels.count else { return }
-		let vm = viewModels[index]
+		let viewModel = viewModels[index]
 		router.routeToDetails(
-			mealId: vm.id,
-			initialTitle: vm.title,
-			initialImageURL: vm.thumbnailURL,
+			mealId: viewModel.id,
+			initialTitle: viewModel.title,
+			initialImageURL: viewModel.thumbnailURL,
 			initialImage: previewImage
 		)
 	}
@@ -126,14 +126,14 @@ extension RecipeListPresenter: RecipeListViewOutput {
 				hasMoreServerData = true
 				interactor.loadInitial()
 			}
-		case .search(let q):
+		case .search(let query):
 			isLoadingMore = false
 			hasMoreServerData = false
-			interactor.search(query: q)
-		case .category(let c):
+			interactor.search(query: query)
+		case .category(let categoryName):
 			isLoadingMore = false
 			hasMoreServerData = false
-			interactor.selectCategory(c)
+			interactor.selectCategory(categoryName)
 		}
 	}
 	
@@ -230,8 +230,8 @@ extension RecipeListPresenter: RecipeListInteractorOutput {
 			return
 		}
 		
-		let existingIds = Set(allViewModels.map(\.id))
-		let unique = mappedViewModels.filter { !existingIds.contains($0.id) }
+		let existingIdSet = Set(allViewModels.map(\.id))
+		let unique = mappedViewModels.filter { !existingIdSet.contains($0.id) }
 		allViewModels.append(contentsOf: unique)
 		
 		let currentCount = viewModels.count
