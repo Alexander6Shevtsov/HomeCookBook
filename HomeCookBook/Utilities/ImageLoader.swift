@@ -169,17 +169,29 @@ actor ImageLoader {
 		try? data.write(to: path, options: [.atomic])
 	}
 	
-	private func fnv1a64(_ string: String) -> String {
-		let prime: UInt64 = ImageLoaderConstants.fnvPrime
-		var hash: UInt64 = ImageLoaderConstants.fnvOffset
-		for byte in string.utf8 {
-			hash ^= UInt64(byte)
-			hash &*= prime
+	private func fnv1a64(_ stringValue: String) -> String {
+			let primeValue: UInt64 = ImageLoaderConstants.fnvPrime
+			let offsetValue: UInt64 = ImageLoaderConstants.fnvOffset
+			
+			let hashValue = stringValue.utf8.reduce(offsetValue) { partialHash, byteValue in
+				let xoredHash = partialHash ^ UInt64(byteValue)
+				let multipliedHash = xoredHash &* primeValue
+				return multipliedHash
+			}
+			
+			let hexValue = String(hashValue, radix: 16)
+			
+			let requiredLength = ImageLoaderConstants.fnvHexLength
+			let paddingCount = max(0, requiredLength - hexValue.count)
+			
+			guard paddingCount > 0 else {
+				return hexValue
+			}
+			
+			let paddingString = String(repeating: "0", count: paddingCount)
+			let paddedHexValue = paddingString + hexValue
+			return paddedHexValue
 		}
-		let hex = String(hash, radix: 16)
-		let pad = String(repeating: "0", count: max(0, ImageLoaderConstants.fnvHexLength - hex.count))
-		return pad + hex
-	}
 	
 	private static func decodedImage(_ image: UIImage) -> UIImage? {
 		guard let cgImage = image.cgImage else { return nil }
