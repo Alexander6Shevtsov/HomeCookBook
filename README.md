@@ -1,11 +1,12 @@
 # HomeCookBook
 ## Домашняя кулинарная книга
 
+Финальный проект iOS-стажировки ШИФТ (ЦФТ)  
+
 iOS-приложение на UIKit
 
-Загружает рецепты из открытого API [TheMealDB](https://www.themealdb.com).  
-Показывает список блюд, детали рецепта, позволяет искать и сохранять в избранное.
-
+Загружает рецепты из открытого API [TheMealDB](https://www.themealdb.com)  
+Показывает список блюд, детали рецепта, позволяет искать и сохранять в избранное
 
 ---
 
@@ -20,12 +21,12 @@ iOS-приложение на UIKit
 
 ## Основные функции
 
-- Список рецептов:
-  - рандомная загрузка первой страницы (условная, ограничение API) 
+- Главный экран:
   - коллекция карточек с обложкой и названием блюда
+  - рандомная загрузка первой страницы (условная, ограничение API) 
   - поиск по названию (если нет результатов — по категориям)
   - фильтр по категориям (меню категорий)
-  - добавление и удаление из избранного  
+  - добавление и удаление из списка избранного  
 
 - Избранное:
   - список сохранённых рецептов
@@ -34,8 +35,8 @@ iOS-приложение на UIKit
   - последние добавленные сверху
 
 - Кэширование:
-  - избранные рецепты сохраняются в Core Data и доступны между запусками
-  - изображения кэшируются в NSCache и на диске
+  - избранные рецепты хранятся в Core Data и доступны между запусками
+  - изображения кэшируются в `NSCache` и на диске через `FileManager`
   - предзагрузка изображений
 
 - Поддержка светлой/темной темы
@@ -44,30 +45,30 @@ iOS-приложение на UIKit
 
 ## Стек проекта
 - Swift 5+, iOS 15.6+
-- UIKit (UICollectionView, UITableView, UISearchController, UINavigationController)
-- VIPER (RecipeList, RecipeDetail) + отдельный экран Favorites
-- URLSession + JSONDecoder (API TheMealDB)
-- Core Data (избранное)
-- ImageLoader: NSCache + FileManager
-- Swift Concurrency: async/await, actor, Task
-- NotificationCenter (синхронизация избранного)
+- UIKit: `UICollectionView`, `UITableView`, `UISearchController`, `UINavigationController`
+- Архитектура:
+  - VIPER для модулей `RecipeList` и `RecipeDetail`
+  - отдельный экран `FavoritesList`
+- Сетевой слой: `URLSession` + `JSONDecoder` (API TheMealDB)
+- Хранение:
+  - Core Data для избранных рецептов
+  - файловый кэш изображений + `NSCache` в `ImageLoader`
+- Concurrency:
+  - Swift Concurrency (`async/await`, `actor`, `Task`, `MainActor`)
+- Инфраструктура:
+  - `NotificationCenter` (синхронизация избранного между экранами)
 
 ---
 
 ## Архитектура
 
-### App
-Точка входа и настройка окна:
-- `AppDelegate`
-- `SceneDelegate`
-
 ### Data
-Работа с сетью и локальными хранилищами:
-- **Persistence** — Core Data стек и модель `FavoriteRecipeMO`
-- **Favorites** — слой управления избранными (`FavoritesStore`)
-- **Networking** — клиент `NetworkClient` и реализация на `URLSession`
-- **DTO** — модели API TheMealDB (`MealSearchDTO`, `MealLookupDTO`)
-- **Services** — сервис `TheMealDBService` для работы с API
+Работа с сетью и локальным хранилищем:
+- `Persistence` — Core Data-стек и модель `FavoriteRecipeMO`
+- `Favorites` — слой управления избранными (`FavoritesStore`)
+- `Networking` — протокол `NetworkClient` и реализация на `URLSession`
+- `DTO` — модели API TheMealDB (`MealSearchDTO`, `MealLookupDTO`)
+- `Services` — сервис `TheMealDBService` для работы с API и маппинга DTO
 
 ### Domain
 Доменная модель:
@@ -91,30 +92,31 @@ iOS-приложение на UIKit
 - `View` — контроллеры и вью-классы
 - `Presenter` — связывает View и Interactor
 - `Interactor` — бизнес-логика и работа с сервисами
-- `Router` — навигация
+- `Router` — навигация между экранами
 - `Assembly` — сборка модулей и внедрение зависимостей
 
 ### Utilities
-- `ImageLoader` — загрузка и кэширования изображений
+- `ImageLoader` — загрузка и кэширования и предзагрузка изображений
 
 ---
 
 ## Работа с сетью и данными
 
-- API: https://www.themealdb.com/api.php
+- API: [https://www.themealdb.com/api.php](https://www.themealdb.com/api.php)
 - Сетевой слой:
-  - `NetworkClient`
-  - `URLSessionNetworkClient` (async/await)
-- TheMealDBService:
-  - загрузка списка блюд
-  - фильтрация
-  - получение деталей рецепта
+  - `NetworkClient` — абстракция над сетевыми запросами
+  - `URLSessionNetworkClient` — реализация на базе `URLSession` с `async/await`
+- `TheMealDBService`:
+  - загрузка списка блюд по букве (`search.php?f=`)
+  - поиск по названию (`search.php?s=`)
+  - фильтрация по категориям (`filter.php?c=`)
+  - получение деталей рецепта (`lookup.php?i=`)
 - Core Data:
-  - `CoreDataStack` для создания persistent container
-  - `FavoritesStore` для управления избранными рецептами
+  - `CoreDataStack` — создание `NSPersistentContainer`
+  - `FavoritesStore` — добавление, удаление и выборка избранных рецептов
 - Изображения:
-  - кэширование через `ImageLoader` (NSCache + файловый кэш)
-  - предзагрузка изображений при пролистывании коллекции
+  - `ImageLoader` генерирует FNV-hash по URL, кэширует изображение в памяти (`NSCache`) и на диске (`FileManager`)
+  - используется prefetching коллекции для фоновой загрузки картинок при скролле
 
 ---
 
@@ -127,13 +129,13 @@ iOS-приложение на UIKit
   - по типу блюда
 - добавить локализацию интерфейса **RU / EN**
 - подключить рецепты коктейлей по API [TheCocktailDB](https://www.thecocktaildb.com)
-- добавить раздела «Случайные рецепты».
+- добавить раздела «Случайный рецепт».
 
 ---
 
 Запуск:
   1. Клонировать репозиторий.
-  2. Запустить в Xcode на симулятор или устройстве с **iOS 15.6+**
+  2. Запустить в Xcode на симуляторе или устройстве с **iOS 15.6+**
      
 ---
 
@@ -172,9 +174,17 @@ Presentation/
       View/
         Cell/
           RecipeCardCell.swift
+        Collection/
+          RecipeListCollectionController.swift
+        Filter/
+          RecipeListFilterMenuBuilder.swift
+        Layout/
+          RecipeListLayoutCalculator.swift
+        Favorites/
+          RecipeListFavoritesObserver.swift
         RecipeListViewController.swift
         StateOverlayView.swift
-      Presentor/
+      Presenter/
         RecipeListPresenter.swift
       Interactor/
         RecipeListInteractor.swift
@@ -197,7 +207,7 @@ Presentation/
       Assembly/
         RecipeDetailAssembly.swift
 
-    Favorites/
+    FavoritesList/
       View/
         FavoritesListViewController.swift
 
