@@ -34,10 +34,19 @@ actor ImageLoader {
 	private let diskCacheDirectory: URL
 	
 	init() {
-		let caches = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first!
-		let dir = caches.appendingPathComponent("ImageCache", isDirectory: true)
-		self.diskCacheDirectory = dir
-		try? fileManager.createDirectory(at: dir, withIntermediateDirectories: true)
+		let caches = fileManager.urls(
+			for: .cachesDirectory,
+			in: .userDomainMask
+		).first!
+		let imageCacheDirectoryURL = caches.appendingPathComponent(
+			"ImageCache",
+			isDirectory: true
+		)
+		self.diskCacheDirectory = imageCacheDirectoryURL
+		try? fileManager.createDirectory(
+			at: imageCacheDirectoryURL,
+			withIntermediateDirectories: true
+		)
 	}
 	
 	nonisolated func cachedImage(for url: URL) -> UIImage? {
@@ -138,12 +147,16 @@ actor ImageLoader {
 	}
 	
 	private func storeInMemoryCache(image: UIImage, for url: URL) {
-		Self.memoryCache.setObject(image, forKey: url as NSURL, cost: Self.imageCost(image))
+		Self.memoryCache.setObject(
+			image,
+			forKey: url as NSURL,
+			cost: Self.imageCost(image)
+		)
 	}
 	
 	private static func imageCost(_ image: UIImage) -> Int {
-		guard let cg = image.cgImage else { return 0 }
-		return cg.bytesPerRow * cg.height
+		guard let cgImage = image.cgImage else { return 0 }
+		return cgImage.bytesPerRow * cgImage.height
 	}
 	
 	private func pathForDiskCache(url: URL) -> URL {
@@ -170,28 +183,28 @@ actor ImageLoader {
 	}
 	
 	private func fnv1a64(_ stringValue: String) -> String {
-			let primeValue: UInt64 = ImageLoaderConstants.fnvPrime
-			let offsetValue: UInt64 = ImageLoaderConstants.fnvOffset
-			
-			let hashValue = stringValue.utf8.reduce(offsetValue) { partialHash, byteValue in
-				let xoredHash = partialHash ^ UInt64(byteValue)
-				let multipliedHash = xoredHash &* primeValue
-				return multipliedHash
-			}
-			
-			let hexValue = String(hashValue, radix: 16)
-			
-			let requiredLength = ImageLoaderConstants.fnvHexLength
-			let paddingCount = max(0, requiredLength - hexValue.count)
-			
-			guard paddingCount > 0 else {
-				return hexValue
-			}
-			
-			let paddingString = String(repeating: "0", count: paddingCount)
-			let paddedHexValue = paddingString + hexValue
-			return paddedHexValue
+		let primeValue: UInt64 = ImageLoaderConstants.fnvPrime
+		let offsetValue: UInt64 = ImageLoaderConstants.fnvOffset
+		
+		let hashValue = stringValue.utf8.reduce(offsetValue) { partialHash, byteValue in
+			let xoredHash = partialHash ^ UInt64(byteValue)
+			let multipliedHash = xoredHash &* primeValue
+			return multipliedHash
 		}
+		
+		let hexValue = String(hashValue, radix: 16)
+		
+		let requiredLength = ImageLoaderConstants.fnvHexLength
+		let paddingCount = max(0, requiredLength - hexValue.count)
+		
+		guard paddingCount > 0 else {
+			return hexValue
+		}
+		
+		let paddingString = String(repeating: "0", count: paddingCount)
+		let paddedHexValue = paddingString + hexValue
+		return paddedHexValue
+	}
 	
 	private static func decodedImage(_ image: UIImage) -> UIImage? {
 		guard let cgImage = image.cgImage else { return nil }
