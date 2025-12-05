@@ -52,7 +52,7 @@ iOS-приложение на UIKit
 - Сетевой слой: `URLSession` + `JSONDecoder` (API TheMealDB)
 - Хранение:
   - Core Data для избранных рецептов
-  - файловый кэш изображений + `NSCache` в `ImageLoader`
+  - файловый кэш изображений `NSCache` + `FileManager`
 - Concurrency:
   - Swift Concurrency (`async/await`, `actor`, `Task`, `MainActor`)
 - Инфраструктура:
