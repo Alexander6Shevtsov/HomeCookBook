@@ -1,6 +1,7 @@
-# HomeCookBook
+# HomeCookBook  
+Кулинарная книга
 
-Финальный проект iOS-стажировки ШИФТ (ЦФТ)  
+Финальный проект iOS стажировки ШИФТ (ЦФТ)  
 
 iOS-приложение на UIKit
 
@@ -18,104 +19,24 @@ iOS-приложение на UIKit
 
 ---
 
-## Основные функции
-
-- Главный экран:
-  - коллекция карточек с обложкой и названием блюда
-  - рандомная загрузка первой страницы (условная, ограничение API) 
-  - поиск по названию (если нет результатов — по категориям)
-  - фильтр по категориям (меню категорий)
-  - добавление и удаление из списка избранного  
-
-- Избранное:
-  - список сохранённых рецептов
-  - удаление свайпом
-  - переход к экрану деталей
-  - последние добавленные сверху
-
-- Кэширование:
-  - избранные рецепты хранятся в Core Data и доступны между запусками
-  - изображения кэшируются в `NSCache` и на диске через `FileManager`
-  - предзагрузка изображений
-
-- Поддержка светлой/темной темы
+## Функционал
+- Загрузка рецептов из API, список и экран деталей  
+- рандомная загрузка первой страницы (условная, ограничение API)    
+- Поиск по рецептам/категориям  
+- Фильтр по категориям    
+- Избранное с сохранением между запусками (Core Data)    
+- Кэш изображений (memory + disk) + предзагузка   
+- Поддержка светлой/тёмной темы  
   
 ---
 
-## Стек проекта
-- Swift 5+, iOS 15.6+
-- UIKit: `UICollectionView`, `UITableView`, `UISearchController`, `UINavigationController`
-- Архитектура:
-  - VIPER для модулей `RecipeList` и `RecipeDetail`
-  - отдельный экран `FavoritesList`
-- Сетевой слой: `URLSession` + `JSONDecoder` (API TheMealDB)
-- Хранение:
-  - Core Data для избранных рецептов
-  - файловый кэш изображений `NSCache` + `FileManager`
-- Concurrency:
-  - Swift Concurrency (`async/await`, `actor`, `Task`, `MainActor`)
-- Инфраструктура:
-  - `NotificationCenter` (синхронизация избранного между экранами)
-
----
-
-## Архитектура
-
-### Data
-Работа с сетью и локальным хранилищем:
-- `Persistence` — Core Data-стек и модель `FavoriteRecipeMO`
-- `Favorites` — слой управления избранными (`FavoritesStore`)
-- `Networking` — протокол `NetworkClient` и реализация на `URLSession`
-- `DTO` — модели API TheMealDB (`MealSearchDTO`, `MealLookupDTO`)
-- `Services` — сервис `TheMealDBService` для работы с API и маппинга DTO
-
-### Domain
-Доменная модель:
-- RecipeListItemEntity — краткое описание блюда для списка
-- RecipeDetailEntity — детали рецепта (заголовок, изображение, текст)
-
-### Presentation (VIPER)
-Каждый экран — отдельный модуль:
-
-- **RecipeList**
-  - список рецептов, поиск, фильтрация, пагинация
-- **RecipeDetail**
-  - отображение деталей рецепта
-- **Favorites**
-  - экран со списком избранных рецептов
-
-Структура VIPER-модулей:
-
-- `Contracts` — протоколы View / Presenter / Interactor / Router
-- `Models` — ViewModel’и для отображения
-- `View` — контроллеры и вью-классы
-- `Presenter` — связывает View и Interactor
-- `Interactor` — бизнес-логика и работа с сервисами
-- `Router` — навигация между экранами
-- `Assembly` — сборка модулей и внедрение зависимостей
-
-### Utilities
-- `ImageLoader` — загрузка и кэширования и предзагрузка изображений
-
----
-
-## Работа с сетью и данными
-
-- API: [https://www.themealdb.com/api.php](https://www.themealdb.com/api.php)
-- Сетевой слой:
-  - `NetworkClient` — абстракция над сетевыми запросами
-  - `URLSessionNetworkClient` — реализация на базе `URLSession` с `async/await`
-- `TheMealDBService`:
-  - загрузка списка блюд по букве (`search.php?f=`)
-  - поиск по названию (`search.php?s=`)
-  - фильтрация по категориям (`filter.php?c=`)
-  - получение деталей рецепта (`lookup.php?i=`)
-- Core Data:
-  - `CoreDataStack` — создание `NSPersistentContainer`
-  - `FavoritesStore` — добавление, удаление и выборка избранных рецептов
-- Изображения:
-  - `ImageLoader` генерирует FNV-hash по URL, кэширует изображение в памяти (`NSCache`) и на диске (`FileManager`)
-  - используется prefetching коллекции для фоновой загрузки картинок при скролле
+## Стек  
+- UIKit
+- VIPER + Assembly
+- Swift Concurrency (async/await, actor)  
+- Core Data   
+- Сетевой слой: `URLSession` + `JSONDecoder`      
+- Кэш изображений: `NSCache` + диск `FileManager`     
 
 ---
 
@@ -126,7 +47,7 @@ iOS-приложение на UIKit
   - по стране
   - по ингредиентам
   - по типу блюда
-- добавить локализацию интерфейса **RU / EN**
+- добавить локализацию интерфейса **RU**
 - подключить рецепты коктейлей по API [TheCocktailDB](https://www.thecocktaildb.com)
 - добавить раздела «Случайный рецепт».
 
@@ -136,83 +57,3 @@ iOS-приложение на UIKit
   1. Клонировать репозиторий.
   2. Запустить в Xcode на симуляторе или устройстве с **iOS 15.6+**
      
----
-
-## Структура проекта 
-
-```text
-App/
-  AppDelegate.swift
-  SceneDelegate.swift
-
-Data/
-  Persistence/
-    CoreDataStack.swift
-  Favorites/
-    FavoritesStore.swift
-    FavoriteRecipeMO.swift
-  Networking/
-    NetworkClient.swift
-  DTO/
-    MealSearchDTO.swift
-    MealLookupDTO.swift
-  Services/
-    MealsService.swift
-
-Domain/
-  Entities/
-    RecipeListItemEntity.swift
-
-Presentation/
-  Modules/
-    RecipeList/
-      Contracts/
-        RecipeListContracts.swift
-      Models/
-        RecipeListModels.swift
-      View/
-        Cell/
-          RecipeCardCell.swift
-        Collection/
-          RecipeListCollectionController.swift
-        Filter/
-          RecipeListFilterMenuBuilder.swift
-        Layout/
-          RecipeListLayoutCalculator.swift
-        Favorites/
-          RecipeListFavoritesObserver.swift
-        RecipeListViewController.swift
-        StateOverlayView.swift
-      Presenter/
-        RecipeListPresenter.swift
-      Interactor/
-        RecipeListInteractor.swift
-      Router/
-        RecipeListRouter.swift
-      Assembly/
-        RecipeListAssembly.swift
-
-    RecipeDetail/
-      Contracts/
-        RecipeDetailContracts.swift
-      View/
-        RecipeDetailViewController.swift
-      Presenter/
-        RecipeDetailPresenter.swift
-      Interactor/
-        RecipeDetailInteractor.swift
-      Router/
-        RecipeDetailRouter.swift
-      Assembly/
-        RecipeDetailAssembly.swift
-
-    FavoritesList/
-      View/
-        FavoritesListViewController.swift
-
-Utilities/
-  ImageLoader.swift
-
-Resources/
-  LaunchScreen
-  Assets.xcassets
